@@ -25,6 +25,13 @@ Nothing between the binary and the GIF authors content — the renderer is
 a player, not an animator. Regenerate after any UX change with
 `npm run demo:record`.
 
+The fleet runs on a **synthetic tailnet**: `HOSTALIASES` resolves
+MagicDNS-style short names (`gpu-box`, `nas`, `e2e-peer`) onto loopback,
+and a mock `tailscale` binary feeds `ping --all` a discovered peer — so
+the transcript shows sending to what looks like remote devices, with the
+genuine discovery/probe/push code paths doing the work. Demo port 49390
+because 49374 is typically held by your own running OpenCode.
+
 ## `demo/demo.mjs` — the full guided tour
 
 `npm run demo` — works straight after `git clone && npm install`: the

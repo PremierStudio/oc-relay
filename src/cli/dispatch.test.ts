@@ -142,6 +142,14 @@ describe("parseCli", () => {
       ok: true,
       command: { command: "ping", all: true },
     });
+    expect(parseCli(["ping", "--all", "--port", "49390"])).toStrictEqual({
+      ok: true,
+      command: { command: "ping", all: true, port: 49390 },
+    });
+    expect(parseCli(["ping", "--port", "nope"])).toStrictEqual({
+      ok: true,
+      command: { command: "ping" },
+    });
   });
 
   it("parses authz subcommands", () => {

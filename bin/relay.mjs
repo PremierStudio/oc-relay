@@ -118,6 +118,7 @@ async function main() {
             fleet,
             discover,
             probe: async (url) => probeFn(url),
+            ...(cmd.port === undefined ? {} : { port: cmd.port }),
           },
           cmd,
         );

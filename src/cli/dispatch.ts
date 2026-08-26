@@ -18,7 +18,7 @@ export type CliCommand =
   | { command: "targets" }
   | { command: "doctor"; repo?: string }
   | { command: "apply"; repo?: string; mode?: "additive" | "manifest-only" }
-  | { command: "ping"; target?: string; all?: boolean }
+  | { command: "ping"; target?: string; all?: boolean; port?: number }
   | {
       command: "enroll";
       name: string;
@@ -62,7 +62,7 @@ export const CLI_USAGE = `usage:
                [--steal]   # after the target takes the session, detach it here
   relay receive --bundle FILE --into DIR
   relay targets
-  relay ping [--target NAME | --all]   # --all probes discovered tailnet peers (opt-in)
+  relay ping [--target NAME | --all] [--port N]   # --all probes discovered tailnet peers (opt-in)
   relay enroll --name NAME [--base-url URL] [--username U] [--password-env VAR]
                [--repo-dir DIR] [--worktree-root DIR] [--https]
   relay authz new --action ACTION [--label TEXT] [--ttl SECONDS]
@@ -198,6 +198,10 @@ export function parseCli(argv: string[]): ParsedCli | CliUsageError {
       const target = requireFlag(flags, "target");
       if (target !== undefined) command.target = target;
       if (flags["all"] === true) command.all = true;
+      const portRaw = requireFlag(flags, "port");
+      // Stryker disable next-line ConditionalExpression: parseInt(undefined) is NaN, so the guard is defensively redundant and behaviorally invisible
+      const port = portRaw === undefined ? NaN : Number.parseInt(portRaw, 10);
+      if (!Number.isNaN(port)) command.port = port;
       return { ok: true, command };
     }
     case "serve-approvals": {

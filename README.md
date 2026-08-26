@@ -119,7 +119,7 @@ discovers and registers it. Inside OpenCode, the packaged
 | `relay send [--steal]` | Route work to a machine — direct push, or bundle if unreachable. `--steal` moves the session off this machine after the target takes it |
 | `relay receive` | Unpack a carried bundle: worktree, commits, context, session |
 | `relay targets` | List your fleet — the machines work can go to |
-| `relay ping [--all]` | Reachability. `--all` adds tailnet peers — **strictly opt-in, never scans unless asked** |
+| `relay ping [--all] [--port N]` | Reachability. `--all` adds discovered tailnet peers — **strictly opt-in, never scans unless asked**; `--port` overrides the peer probe port |
 | `relay enroll` | Add a machine to the fleet (auto-discovers its URL on your tailnet) |
 | `relay doctor` / `relay apply` | Audit / converge a machine's env against `.opencode/env.json` |
 | `relay authz new` | Mint a one-time approval — prints a claim URL + QR for your phone |

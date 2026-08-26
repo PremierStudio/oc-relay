@@ -41,8 +41,8 @@ const cfg = join(home, ".config", "oc-relay");
 mkdirSync(cfg, { recursive: true });
 mkdirSync(repo, { recursive: true });
 
-const oc2 = (routes) =>
-  new Promise((resolve) => {
+const oc2 = (routes, fixedPort = 0) =>
+  new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
       let body = "";
       req.on("data", (c) => (body += c));
@@ -53,12 +53,23 @@ const oc2 = (routes) =>
         res.end(JSON.stringify(r));
       });
     });
-    server.listen(0, "127.0.0.1", () =>
-      resolve({ close: () => new Promise((d) => server.close(d)), baseUrl: `http://127.0.0.1:${server.address().port}` }),
+    // "::" is dual-stack: fleet peers are addressed by MagicDNS-style
+    // short names resolved via HOSTALIASES → localhost.
+    server.once("error", reject);
+    server.listen(fixedPort, "::", () =>
+      resolve({
+        close: () => new Promise((d) => server.close(d)),
+        baseUrl: `http://127.0.0.1:${server.address().port}`,
+        port: server.address().port,
+      }),
     );
   });
 
-const gpuBox = await oc2({ "/sync/replay": { sessionID: "ses_9c2" } });
+// Dedicated demo port: 49374 (the real OC2 default) is usually held by
+// the viewer's own running OpenCode.
+const gpuBox = await oc2({ "/sync/replay": { sessionID: "ses_9c2" } }, 49390).catch(() =>
+  oc2({ "/sync/replay": { sessionID: "ses_9c2" } }),
+);
 const self = await oc2({
   "/sync/history": [{ seq: 1, kind: "user.message", text: "wire the ops panel" }],
   "/sync/steal": {},
@@ -72,13 +83,33 @@ await run("git", ["add", "."], { cwd: repo });
 await run("git", ["commit", "-qm", "init"], { cwd: repo });
 await run("git", ["checkout", "-qb", "opencode/ops-panel"], { cwd: repo });
 
+// ── the synthetic tailnet ──
+// HOSTALIASES (dotless keys only, per glibc) + a mock `tailscale`
+// binary: peers resolve and discover like a real tailnet, loopback only.
+const aliasesPath = join(SANDBOX, "hostaliases");
+writeFileSync(
+  aliasesPath,
+  ["gpu-box localhost", "nas localhost", "laptop localhost", "e2e-peer localhost", ""].join("\n"),
+);
+const fakeBin = join(SANDBOX, "bin");
+mkdirSync(fakeBin, { recursive: true });
+writeFileSync(
+  join(fakeBin, "tailscale"),
+  [
+    "#!/bin/sh",
+    `echo '{"Peer":{"k1":{"HostName":"e2e-peer","DNSName":"e2e-peer.","TailscaleIPs":["127.0.0.5"],"Online":true}}}'`,
+    "",
+  ].join("\n"),
+);
+await run("chmod", ["+x", join(fakeBin, "tailscale")]);
+
 writeFileSync(
   join(cfg, "fleet.json"),
   JSON.stringify(
     {
       targets: {
-        "gpu-box": { baseUrl: gpuBox.baseUrl, username: "pair-user", passwordEnv: "GPUBOX_RELAY_PASS", repoDir: "~/srv/myapp" },
-        nas: { baseUrl: "http://127.0.0.1:9", passwordEnv: "NAS_RELAY_PASS", repoDir: "~/code/myapp" },
+        "gpu-box": { baseUrl: `http://gpu-box:${gpuBox.port}`, username: "pair-user", passwordEnv: "GPUBOX_RELAY_PASS", repoDir: "~/srv/myapp" },
+        nas: { baseUrl: "http://nas:49391", passwordEnv: "NAS_RELAY_PASS", repoDir: "~/code/myapp" },
       },
     },
     null,
@@ -91,8 +122,10 @@ const env = {
   ...process.env,
   HOME: home,
   RELAY_FLEET: join(cfg, "fleet.json"),
+  HOSTALIASES: aliasesPath,
   GPUBOX_RELAY_PASS: "synthetic",
   NAS_RELAY_PASS: "synthetic",
+  PATH: `${fakeBin}:${process.env.PATH}`,
 };
 
 // ── the terminal session ──
@@ -112,8 +145,9 @@ w("  " + C.cyan("oc-relay") + C.dim("  ·  real binary  ·  loopback fleet") + "
 w("\n");
 
 async function prompt(cmd) {
+  w("\n"); // breathing room — commands butted against output read as jumbled
   w(C.dim("~/code/myapp $ "));
-  await sleep(240 + Math.random() * 200); // hands find the keyboard
+  await sleep(750 + Math.random() * 550); // let the previous beat land
   for (const ch of cmd) {
     w(ch); // one char per write — multi-char pops read as machine-gun
     let d = 60 + Math.random() * 60;
@@ -138,8 +172,8 @@ await prompt("relay targets");
 await relay(["targets"]);
 await sleep(450);
 
-await prompt("relay ping");
-await relay(["ping"]);
+await prompt("relay ping --all --port 49390");
+await relay(["ping", "--all", "--port", "49390"]);
 await sleep(450);
 
 await prompt("relay send --target gpu-box --session ses_7f3 --steal");

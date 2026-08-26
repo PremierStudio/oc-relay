@@ -54,7 +54,7 @@ const run = (cmd, args, opts = {}) =>
     ),
   );
 
-function oc2Server(handlers) {
+function oc2Server(handlers, fixedPort = 0) {
   const seen = [];
   const server = createServer((req, res) => {
     let body = "";
@@ -71,8 +71,12 @@ function oc2Server(handlers) {
       res.end(json === undefined ? "" : JSON.stringify(json));
     });
   });
-  return new Promise((resolve) =>
-    server.listen(0, "127.0.0.1", () =>
+  // "::" is dual-stack: the fleet addresses peers by MagicDNS-style
+  // short names (gpu-box, nas) resolved via HOSTALIASES → localhost, so
+  // every URL in the transcript reads like a real tailnet.
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(fixedPort, "::", () =>
       resolve({
         server,
         port: server.address().port,
@@ -80,13 +84,31 @@ function oc2Server(handlers) {
         seen,
         close: () => new Promise((r) => server.close(r)),
       }),
-    ),
-  );
+    );
+  });
 }
 
-const target = await oc2Server({
-  "/sync/replay": () => ({ json: { sessionID: "ses_9c2" } }),
-});
+// Prefer the real OC2 default port so the fleet reads like production
+// config; fall back if it's taken.
+async function oc2On(handlers, preferred) {
+  for (const port of [preferred, preferred + 200, 0]) {
+    try {
+      return await oc2Server(handlers, port);
+    } catch {
+      /* port busy — try the next */
+    }
+  }
+  throw new Error("could not bind fake OC2 server");
+}
+
+const target = await oc2On(
+  {
+    "/sync/replay": () => ({ json: { sessionID: "ses_9c2" } }),
+  },
+  // a dedicated demo port: 49374 (the real OC2 default) is often held
+  // by the user's own running OpenCode, which would break the illusion
+  49390,
+);
 const source = await oc2Server({
   "/sync/history": () => ({ json: [{ seq: 1, kind: "user.message", text: "…" }] }),
   "/sync/steal": () => ({ json: {} }),
@@ -132,13 +154,13 @@ writeFileSync(
     {
       targets: {
         "gpu-box": {
-          baseUrl: target.baseUrl,
+          baseUrl: `http://gpu-box:${target.port}`,
           username: "pair-user",
           passwordEnv: "GPUBOX_RELAY_PASS",
           repoDir: "~/srv/myapp",
         },
         nas: {
-          baseUrl: "http://127.0.0.1:9",
+          baseUrl: "http://nas:49391",
           passwordEnv: "NAS_RELAY_PASS",
           repoDir: "~/code/myapp",
         },
@@ -161,14 +183,44 @@ writeFileSync(
   ),
 );
 
+// ── the synthetic tailnet ──────────────────────────────────────
+// HOSTALIASES maps MagicDNS-style names onto localhost, so children
+// resolve them like real hosts; a mock `tailscale` binary feeds
+// `ping --all` a discovered peer. Zero real network involved.
+const aliasesPath = join(SANDBOX, "hostaliases");
+writeFileSync(
+  aliasesPath,
+  [
+    // glibc's HOSTALIASES only honors dotless alias keys, so the mock
+    // tailnet uses short peer names (like MagicDNS short names)
+    "gpu-box localhost",
+    "nas localhost",
+    "laptop localhost",
+    "e2e-peer localhost",
+    "",
+  ].join("\n"),
+);
+const fakeBin = join(SANDBOX, "bin");
+mkdirSync(fakeBin, { recursive: true });
+writeFileSync(
+  join(fakeBin, "tailscale"),
+  [
+    "#!/bin/sh",
+    `echo '{"Peer":{"k1":{"HostName":"e2e-peer","DNSName":"e2e-peer.","TailscaleIPs":["127.0.0.5"],"Online":true}}}'`,
+    "",
+  ].join("\n"),
+);
+await run("chmod", ["+x", join(fakeBin, "tailscale")]);
+
 const baseEnv = {
   HOME: home,
   RELAY_FLEET: fleetPath,
   RELAY_AUTHZ: authzPath,
+  HOSTALIASES: aliasesPath,
   GPUBOX_RELAY_PASS: "synthetic",
   NAS_RELAY_PASS: "synthetic",
   MYAPP_TOK: "synthetic-secret",
-  PATH: process.env.PATH,
+  PATH: `${fakeBin}:${process.env.PATH}`,
 };
 
 // ---------- presentation ----------
@@ -204,15 +256,19 @@ function segment(title, tight = false) {
  * pauses are); set DEMO_TYPE=0 to paste instead.
  */
 const TYPE = process.env.DEMO_TYPE !== "0";
-async function prompt(cwd, cmd, tight = false) {
+async function prompt(cwd, cmd) {
   const here = cwd === repo ? "~/code/myapp" : cwd === receiver ? "~/srv/myapp" : "~";
-  if (!tight) console.log("");
+  // A blank line before every prompt: without it, a command starting
+  // directly under the previous output reads as one jumbled block.
+  console.log("");
   process.stdout.write(`${C.dim(`${here} $`)} `);
   if (!TYPE) {
     process.stdout.write(`${C.green(cmd)}\n`);
     return;
   }
-  await sleep(260 + Math.random() * 240); // hands find the keyboard
+  // Let the previous beat land before typing begins — an instant start
+  // feels abrupt on video. Scales with DEMO_PACE like every other pause.
+  await pause(900 + Math.random() * 700);
   for (const ch of cmd) {
     process.stdout.write(C.green(ch));
     let d = 60 + Math.random() * 60;
@@ -276,10 +332,10 @@ await prompt(repo, "relay targets");
 await relay(["targets"]);
 await pause(350);
 
-segment("2 · who's alive right now");
-await prompt(repo, "relay ping");
-await relay(["ping"]);
-await pause(350);
+segment("2 · who's alive — fleet + tailnet peers (--all is opt-in)");
+await prompt(repo, "relay ping --all --port 49390");
+await relay(["ping", "--all", "--port", "49390"]);
+await pause(600);
 
 // ── 3. offload: move the session, free this machine ───────────
 segment("3 · offload — send it away AND let go here");
@@ -322,7 +378,7 @@ await pause(350);
 // claim url + token + the complete QR visible at rest (26-row screen)
 segment("5 · sensitive work needs a human yes", true);
 // (--ttl omitted: 300s default — keeps the echoed command on one row)
-await prompt(repo, `relay authz new --action deploy --label 'ship it' --host 127.0.0.1 --port ${APPROVALS_PORT}`, true);
+await prompt(repo, `relay authz new --action deploy --label 'ship it' --host laptop --port ${APPROVALS_PORT}`);
 const minted = await relay([
   "authz",
   "new",
@@ -331,7 +387,7 @@ const minted = await relay([
   "--label",
   "ship it",
   "--host",
-  "127.0.0.1",
+  "laptop",
   "--port",
   String(APPROVALS_PORT),
 ]);
