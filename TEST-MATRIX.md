@@ -24,8 +24,8 @@ by a human on real hardware — never in CI.
 | PROVISION-02 | unit | `src/provision/node.test.ts`, `slug.test.ts` | node adapters, slug rules |
 | HANDOFF-01 | unit | `src/transport/handoff.test.ts` | `handoff.v1` build/parse, all diagnostic paths |
 | HANDOFF-02 | unit | `src/transport/relay.test.ts` | send/receive strategies, anchor write, error wrapping, start points |
-| SYNC-01 | unit | `src/transport/sync.test.ts` | OC2 client: auth, endpoints, error mapping |
-| SYNC-01 | **e2e** | `test/e2e/sync-authz.test.mjs` | binary pushes through a live fake OC2 (auth header, body, session id) |
+| SYNC-01 | unit | `src/transport/sync.test.ts` | OC2 client: auth, endpoints, steal, error mapping |
+| SYNC-01 | **e2e** | `test/e2e/sync-authz.test.mjs` | binary pushes through a live fake OC2 (auth header, body, session id); `--steal` detaches on the source, no steal without the flag |
 | GIT-01 | unit | `src/transport/git.test.ts` | worktree planning/creation |
 | GIT-01 | **e2e** | `test/e2e/env-git.test.mjs` | bundle fallback: send offline → carry → receive → real worktree + anchor + context |
 | WIP-01 | unit | `src/cli/handlers.test.ts` | sidecar creation contract, payload key, push-path skip, fetch + FETCH_HEAD branch, fetch failures |
@@ -42,6 +42,7 @@ by a human on real hardware — never in CI.
 | AUTHZ-03 | unit | `src/authz/store.test.ts`, `node.test.ts` | purge window boundaries, commit routing, serialization, lock breaking/defaults/contention |
 | AUTHZ-03 | **e2e** | `test/e2e/wip-import-authz.test.mjs` | ten parallel CLI mints all persist through the locked file store |
 | QR-01 | e2e | `test/e2e/wip-import-authz.test.mjs` | qrencode renders claim art; clean degradation without it |
+| OFFLOAD-01 | unit | `src/cli/handlers.test.ts` | `--steal` fires only after a successful push, only when requested; never on the bundle path; degrades honestly when unwired |
 | PKG-01 | e2e | `test/e2e/disc-pkg.test.mjs` | `dist/index.js` exposes every documented runtime export || PKG-02 | e2e | `test/e2e/pkg-install.test.mjs` | `npm pack` → clean consumer install → API import → `.bin/relay` usage exit 2 |
 | PKG-03 | manual | checklist §1 | installed tarball on real hardware (spot-check) |
 | FLEET-01 | unit | `src/cli/config.test.ts` | fleet parsing, env expansion, credential resolution |

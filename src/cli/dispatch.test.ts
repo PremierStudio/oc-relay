@@ -63,6 +63,17 @@ describe("parseCli", () => {
     }
   });
 
+  it("parses send --steal as a boolean", () => {
+    expect(parseCli(["send", "--target", "x", "--steal"])).toStrictEqual({
+      ok: true,
+      command: { command: "send", target: "x", steal: true },
+    });
+    expect(parseCli(["send", "--target", "x"])).toStrictEqual({
+      ok: true,
+      command: { command: "send", target: "x" },
+    });
+  });
+
   it("parses full enroll", () => {
     expect(
       parseCli([

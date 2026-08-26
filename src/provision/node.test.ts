@@ -70,8 +70,12 @@ describe("execHookRunner", () => {
     const r = await execHookRunner(dir).run('node -p "process.cwd()"');
     expect(r.code).toBe(0);
     expect(r.command).toBe('node -p "process.cwd()"');
+    // cmd.exe may report 8.3 short names (RUNNER~1) and mixed case;
+    // realpath + case-insensitive comparison is portable across shells.
     const { realpath } = await import("node:fs/promises");
-    expect(r.stdout.trim()).toBe(await realpath(dir));
+    expect((await realpath(r.stdout.trim())).toLowerCase()).toBe(
+      (await realpath(dir)).toLowerCase(),
+    );
     expect(r.durationMs).toBeGreaterThanOrEqual(0);
     expect(r.durationMs).toBeLessThan(10_000);
   });

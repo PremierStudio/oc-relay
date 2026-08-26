@@ -782,12 +782,14 @@ describe("runReceive git-bundle fetch", () => {
     );
     const sidecar = join(dirname("/carry/b.json"), "b.bundle");
     expect(calls[0]).toEqual(["fetch", sidecar, "opencode/wip-thing"]);
+    // planWorktree composes directories with a template string — always
+    // forward slashes — so the expectation stays literal on every platform.
     expect(calls[1]).toEqual([
       "worktree",
       "add",
       "-b",
       "opencode/wip-thing",
-      join("/into", ".worktrees", "wip-thing"),
+      "/into/.worktrees/wip-thing",
       "FETCH_HEAD",
     ]);
     expect(r.branch).toBe("opencode/wip-thing");
@@ -1212,6 +1214,61 @@ describe("runSend payload-ladder spies", () => {
       { targetName: "t", sessionId: "s", bundleOut: "/b.json" },
     );
     expect(exported).toBe(0);
+  });
+
+  it("steals the session from the source only when --steal is requested", async () => {
+    const stolen: string[] = [];
+    const wired = () => ({
+      ...base(),
+      sourceHistory: async () => [{ seq: 1 }],
+      targetReplay: async () => "ses_tgt",
+      sourceSteal: async (sid: string) => {
+        stolen.push(sid);
+      },
+    });
+    const r = await runSend(wired(), {
+      targetName: "t",
+      sessionId: "ses_src",
+      bundleOut: "/b.json",
+      steal: true,
+    });
+    expect(r.mode).toBe("pushed");
+    expect(r.stolenFromSource).toBe(true);
+    expect(stolen).toEqual(["ses_src"]);
+
+    const quiet = await runSend(wired(), { targetName: "t", sessionId: "ses_src" });
+    expect(quiet.stolenFromSource).toBeUndefined();
+    expect(stolen).toEqual(["ses_src"]);
+  });
+
+  it("never steals when the push itself failed (bundle fallback path)", async () => {
+    const stolen: string[] = [];
+    const r = await runSend(
+      {
+        ...base(),
+        sourceSteal: async (sid) => {
+          stolen.push(sid);
+        },
+        writeBundle: async () => undefined,
+      },
+      { targetName: "t", sessionId: "ses_src", bundleOut: "/b.json", steal: true },
+    );
+    expect(r.mode).toBe("bundled");
+    expect(r.stolenFromSource).toBeUndefined();
+    expect(stolen).toEqual([]);
+  });
+
+  it("degrades honestly when --steal is requested but no source client is wired", async () => {
+    const r = await runSend(
+      {
+        ...base(),
+        sourceHistory: async () => [{ seq: 1 }],
+        targetReplay: async () => "ses_tgt",
+      },
+      { targetName: "t", sessionId: "ses_src", steal: true },
+    );
+    expect(r.mode).toBe("pushed");
+    expect(r.stolenFromSource).toBeUndefined();
   });
 
   it("skips discovery entirely for scoped pings", async () => {

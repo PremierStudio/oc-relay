@@ -2,11 +2,12 @@
 
 # oc-relay
 
-**The work follows you.**
+**Your fleet is the computer.**
 
-Move your in-progress work — code, context, and your OpenCode session —
-from laptop → desktop → build server with one command.
-Even when the other machine is offline.
+Route OpenCode work between every machine you own — dispatch heavy
+sessions to idle boxes, offload to free up your laptop, pick up exactly
+where you left off on any device. One command, even if the target is
+offline right now.
 
 [![CI](https://github.com/PremierStudio/oc-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/PremierStudio/oc-relay/actions/workflows/ci.yml)
 ![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
@@ -14,52 +15,62 @@ Even when the other machine is offline.
 ![mutants](https://img.shields.io/badge/mutants%20killed-2008%20%2F%202008-blue)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
-**`relay send --target desktop`**
+**`relay send --target gpu-box --steal`**
 
 </div>
 
 ---
 
+## Three ways people use it
+
+**1. Offload — free up the machine you're on.**
+A session is cooking your laptop's fans. Send it to the box with the
+headroom *and let go of it here*:
+
 ```
-laptop $  relay send --target desktop --session ses_7f3 --context-file ctx.json
+laptop $  relay send --target gpu-box --session ses_7f3 --steal
 
-          packing   branch opencode/tag-fix (3 commits)
-                    session ses_7f3 · done[2] · left[3] · decisions[1]
-          ✓ pushed via sync-replay → desktop
-          ✓ target session ses_9c2 · worktree ready
+          ✓ pushed via sync-replay → gpu-box
+          ✓ target session ses_9c2
+          ✓ detached here: session ses_7f3 now lives on gpu-box
 
-
-desktop $ cd ~/code/app/.worktrees/tag-fix && ls .relay/
-
-          handoff.json   ← your notes, anchored in the repo
-                            your branch, your commits, your session.
-                            pick up exactly where you left off.
+          your laptop is yours again.
 ```
 
-## The problem
+`--steal` moves the session rather than copying it — after the target
+confirms it has everything, relay detaches it from the source machine.
 
-You were deep in something on your laptop. Now you're at your desktop.
+**2. Orchestrate from a thin client.**
+Keep a lightweight machine as your cockpit and treat the rest as compute.
+Your fleet is a list; `relay ping --all` shows what's alive; work goes
+wherever has the resources — NAS, desktop, rack box, three machines
+sitting idle under your desk.
 
-Your branch is there (git handles that). But your *context* isn't —
-the half-formed thoughts, the "done / left / decisions" in your head,
-and your OpenCode session that took twenty minutes of explaining to get
-useful. So you re-explain. Every time. To every machine.
+```
+thin $    relay targets
+          nas       http://nas:49374        ~/code/myapp
+          desktop   http://desktop:49374    ~/code/myapp
+          gpu-box   http://gpu-box:49374    ~/srv/myapp
 
-**relay ends that.** One command moves the whole session. The other
-machine boots your worktree with your notes anchored inside the repo and
-your session live.
+thin $    relay send --target nas --session ses_2k --steal
+```
 
-## Three things move
+**3. Hand off — continue anywhere.**
+Leave your desk mid-thought, resume at the desktop: same branch, same
+WIP commits, same notes, same session. Nothing to re-explain.
+
+## What actually moves
 
 | What | How | Survives offline |
 |---|---|---|
 | **Your code** | git branch + WIP commits | ✓ rides as a git-bundle sidecar next to the handoff file |
 | **Your context** | a `done / left / decisions` memo | ✓ anchored to `.relay/handoff.json` in the repo — plain JSON, forever readable |
-| **Your session** | OpenCode's sync protocol (fast path) | ✓ `opencode export`/`import` fallback carried in-band |
+| **Your session** | OpenCode's sync protocol (fast path), `export`/`import` fallback | ✓ carried in-band inside the bundle |
 
-Both machines online? Direct push, instant. Target asleep? relay writes a
-portable bundle — carry it over by any means, `relay receive` unpacks
-worktree + commits + context + session.
+Target reachable? Direct push, instant — and `--steal` hands over
+ownership. Target asleep? relay writes a portable bundle; carry it over
+by any means and `relay receive` rebuilds worktree + commits + context +
+session.
 
 ## 60-second start
 
@@ -67,41 +78,41 @@ worktree + commits + context + session.
 npm install -g oc-relay
 ```
 
-Tell relay about your other machine once:
+List your machines once (all of them — this is your compute pool):
 
 ```jsonc
 // ~/.config/oc-relay/fleet.json  (override: $RELAY_FLEET)
-{ "targets": { "desktop": {
-    "baseUrl": "http://desktop:49374",
-    "username": "pair-user",
-    "passwordEnv": "DESKTOP_RELAY_PASS",   // secrets live in env, never in files
-    "repoDir": "~/code/myapp" } } }
+{ "targets": {
+    "nas":     { "baseUrl": "http://nas:49374",     "passwordEnv": "NAS_RELAY_PASS",     "repoDir": "~/code/myapp" },
+    "desktop": { "baseUrl": "http://desktop:49374", "passwordEnv": "DESKTOP_RELAY_PASS", "repoDir": "~/code/myapp" },
+    "gpu-box": { "baseUrl": "http://gpu-box:49374", "passwordEnv": "GPUBOX_RELAY_PASS",  "repoDir": "~/srv/myapp" } } }
 ```
 
 Then, from inside your repo:
 
 ```sh
-relay send --target desktop                      # code + context
-relay send --target desktop --session ses_x      # + the live session
-relay send --target desktop --context-file ctx.json
+relay ping                    # who's alive?
+relay send --target nas       # move code + context
+relay send --target nas --session ses_x --steal   # + move the session off this machine
+relay send --target nas --context-file ctx.json
 # target offline? a handoff.json + .bundle sidecar are written instead:
 relay receive --bundle relay-bundle-*.json --into ~/code/myapp
 ```
 
-Inside OpenCode, drop `.opencode/command/handoff.md` (ships in the
-package) into your project and type `/handoff` — the agent walks the
-same flow with you.
+New machine on the tailnet? `relay enroll gpu-box --repo-dir ~/srv/myapp`
+discovers and registers it. Inside OpenCode, the packaged
+`.opencode/command/handoff.md` gives you `/handoff` for the same flow.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `relay send` | Move work to a target — direct push, or bundle if unreachable |
+| `relay send [--steal]` | Route work to a machine — direct push, or bundle if unreachable. `--steal` moves the session off this machine after the target takes it |
 | `relay receive` | Unpack a carried bundle: worktree, commits, context, session |
-| `relay targets` | List your fleet |
-| `relay ping [--all]` | Check reachability. `--all` adds tailnet peers — **strictly opt-in, never scans unless asked** |
-| `relay enroll` | Add a machine to your fleet (auto-discovers its URL on your tailnet) |
-| `relay doctor` / `relay apply` | Audit / converge this machine's env against `.opencode/env.json` |
+| `relay targets` | List your fleet — the machines work can go to |
+| `relay ping [--all]` | Reachability. `--all` adds tailnet peers — **strictly opt-in, never scans unless asked** |
+| `relay enroll` | Add a machine to the fleet (auto-discovers its URL on your tailnet) |
+| `relay doctor` / `relay apply` | Audit / converge a machine's env against `.opencode/env.json` |
 | `relay authz new` | Mint a one-time approval — prints a claim URL + QR for your phone |
 | `relay serve-approvals` | Run the phone-approval endpoint (loopback by default) |
 
@@ -125,26 +136,27 @@ Most tools ask you to trust the README. This one ships proof:
   the code thousands of ways ("flip this check", "delete this guard");
   every single one was caught by a test. The three exemptions that exist
   are documented with reasons and audited.
-- **22 end-to-end scenarios** drive the real binary with real git:
-  offline transfers, phone approvals, corrupted configs, concurrent
-  writes — [the whole map](TEST-MATRIX.md).
+- **23 end-to-end scenarios** drive the real binary with real git:
+  offline transfers, session steals, phone approvals, corrupted
+  configs, concurrent writes — [the whole map](TEST-MATRIX.md).
 - **Synthetic fixtures only.** No test ever touches a real network,
   tailnet, or hostname. ([Why that matters](CONTRIBUTING.md#the-rules).)
 
 ```sh
 npm run check       # typecheck + tests + 100% coverage gate
-npm run test:e2e    # 22 scenarios against the real binary
+npm run test:e2e    # 23 scenarios against the real binary
 npm run mutate      # the saboteur. 2,008 attempts, zero survivors.
 ```
 
 ## Built for OpenCode
 
 relay is the missing client for OpenCode's own cross-machine sync
-protocol — the same internal path their tools use, productized for
-everyone, with the stability contract written down and mutation-tested.
-Adapters are swappable slots (discovery, secrets, transport): Tailscale
-is a *reference implementation*, never a hard dependency. If you have
-git and an OpenCode server, you have 100% of relay.
+protocol — the same internal path their tools use (history, replay, and
+steal), productized for everyone, with the stability contract written
+down and mutation-tested. Adapters are swappable slots (discovery,
+secrets, transport): Tailscale is a *reference implementation*, never a
+hard dependency. If you have git and an OpenCode server on each machine,
+you have 100% of relay.
 
 We'd love to see this upstreamed or featured in the plugin ecosystem.
 

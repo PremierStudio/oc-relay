@@ -85,6 +85,11 @@ export async function fakeOc2Server({ replayResponse } = {}) {
         res.end(JSON.stringify([{ seq: 1, kind: "synthetic" }]));
         return;
       }
+      if (req.url === "/sync/steal") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end("");
+        return;
+      }
       res.writeHead(404).end();
     });
   });

@@ -11,6 +11,8 @@ export type CliCommand =
       repo?: string;
       bundleOut?: string;
       contextFile?: string;
+      /** Detach the session from this machine after the target takes it. */
+      steal?: boolean;
     }
   | { command: "receive"; into: string; bundle: string }
   | { command: "targets" }
@@ -51,6 +53,7 @@ export interface CliUsageError {
 
 export const CLI_USAGE = `usage:
   relay send --target NAME [--session ID] [--repo DIR] [--bundle-out FILE] [--context-file FILE]
+               [--steal]   # after the target takes the session, detach it here
   relay receive --bundle FILE --into DIR
   relay targets
   relay ping [--target NAME | --all]   # --all probes discovered tailnet peers (opt-in)
@@ -155,6 +158,7 @@ export function parseCli(argv: string[]): ParsedCli | CliUsageError {
         return { ok: false, message: "send requires --target", usage: CLI_USAGE };
       }
       const command: Extract<CliCommand, { command: "send" }> = { command: "send", target };
+      if (flags["steal"] === true) command.steal = true;
       const session = requireFlag(flags, "session");
       if (session !== undefined) command.session = session;
       const repo = requireFlag(flags, "repo");

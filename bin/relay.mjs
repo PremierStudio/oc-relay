@@ -268,25 +268,29 @@ async function main() {
             };
 
       const selfRaw = await readJsonIfExists(join(homedir(), ".config", "oc-relay", "self.json"));
-      const sourceHistory =
+      const selfClient =
         selfRaw && typeof selfRaw.baseUrl === "string"
+          ? new Oc2SyncClient({
+              baseUrl: selfRaw.baseUrl,
+              credentials: {
+                username: String(selfRaw.username ?? ""),
+                password: String(selfRaw.password ?? process.env[selfRaw.passwordEnv ?? ""] ?? ""),
+              },
+              fetch: globalThis.fetch,
+            })
+          : undefined;
+      const sourceHistory =
+        selfClient !== undefined
           ? async (sid) => {
-              const client = new Oc2SyncClient({
-                baseUrl: selfRaw.baseUrl,
-                credentials: {
-                  username: String(selfRaw.username ?? ""),
-                  password: String(selfRaw.password ?? process.env[selfRaw.passwordEnv ?? ""] ?? ""),
-                },
-                fetch: globalThis.fetch,
-              });
               try {
-                return await client.history(sid);
+                return await selfClient.history(sid);
               } catch (err) {
                 if (err instanceof SyncError) return [];
                 throw err;
               }
             }
           : undefined;
+      const sourceSteal = selfClient !== undefined ? (sid) => selfClient.steal(sid) : undefined;
 
       const targetCreds = resolveCredentials(sel, process.env);
       const targetClient = new Oc2SyncClient({
@@ -306,6 +310,7 @@ async function main() {
           currentBranch: async (d) => (await gitLine(d, ["rev-parse", "--abbrev-ref", "HEAD"])) || "main",
           originUrl: async (d) => (await gitLine(d, ["remote", "get-url", "origin"])) || "",
           sourceHistory,
+          sourceSteal,
           ...(localExport !== undefined ? { localExport } : {}),
           targetReplay: async (sid, events) => targetClient.replay(sid, events),
           writeBundle: async (p, c) => {
@@ -332,6 +337,7 @@ async function main() {
           ...(sessionId !== undefined ? { sessionId } : {}),
           bundleOut,
           ...(contextFile !== undefined ? { contextFile } : {}),
+          ...(cmd.steal === true ? { steal: true } : {}),
         },
       );
 
@@ -339,6 +345,9 @@ async function main() {
         console.log(`pushed via ${outcome.report.strategy} → ${cmd.target}`);
         console.log(`target session: ${outcome.report.targetSessionId}`);
         console.log(`events: ${outcome.report.eventCount}`);
+        if (outcome.stolenFromSource === true) {
+          console.log(`detached here: session ${sessionId} now lives on ${cmd.target}`);
+        }
       } else {
         console.log(`target unreachable; bundle written: ${outcome.bundlePath}`);
         console.log(`carry it over, then: relay receive --bundle ${outcome.bundlePath} --into <repo>`);

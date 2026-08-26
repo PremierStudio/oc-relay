@@ -44,6 +44,18 @@ describe("E2E SYNC-01: direct push to a live target", () => {
       assert.equal(r.code, 0, `send failed: ${r.stderr}\n${r.stdout}`);
       assert.match(r.stdout, /pushed via sync-replay/);
       assert.match(r.stdout, /ses_tgt_9/);
+      // --steal was not passed: the source keeps its session
+      assert.ok(!source.seen.some((s) => s.url === "/sync/steal"));
+
+      const stealRun = await runRelay(
+        ["send", "--target", "build-server", "--session", "ses_src_1", "--steal"],
+        { cwd: t.repo, env: { ...t.env, E2E_PEER_PASS: "peer-pass" } },
+      );
+      assert.equal(stealRun.code, 0, stealRun.stderr);
+      assert.match(stealRun.stdout, /detached here: session ses_src_1/);
+      const stealCall = source.seen.find((s) => s.url === "/sync/steal");
+      assert.ok(stealCall, "source server never saw the steal");
+      assert.equal(JSON.parse(stealCall.body).sessionId, "ses_src_1");
 
       const replay = target.seen.find((s) => s.url === "/sync/replay");
       assert.ok(replay, "target saw no replay call");

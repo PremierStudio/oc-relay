@@ -158,6 +158,8 @@ export interface SendCommandDeps {
   localExport?: (sessionId: string) => Promise<string>;
   /** Fast-path sink: target's OC2 replay endpoint. */
   targetReplay?: (sessionId: string, events: unknown[]) => Promise<string>;
+  /** Offload: detach the session from this machine (`/sync/steal`). */
+  sourceSteal?: (sessionId: string) => Promise<void>;
   /** Where a bundle lands when direct push is not viable. */
   writeBundle?: (path: string, contents: string) => Promise<void>;
   readFile?: (path: string) => Promise<string>;
@@ -175,12 +177,14 @@ export interface SendOutcome {
   envelope: HandoffEnvelope;
   report?: { strategy: SendStrategy; targetSessionId: string; eventCount: number };
   bundlePath?: string;
+  /** True when --steal detached the session from the source machine. */
+  stolenFromSource?: boolean;
 }
 
 /** Execute `relay send`. Direct push first; bundle as the mailbox fallback. */
 export async function runSend(
   deps: SendCommandDeps,
-  input: { targetName?: string; sessionId?: string; bundleOut?: string; contextFile?: string },
+  input: { targetName?: string; sessionId?: string; bundleOut?: string; contextFile?: string; steal?: boolean },
 ): Promise<SendOutcome> {
   const selection = selectTarget(deps.fleet, input.targetName);
   if (!selection.ok) {
@@ -243,6 +247,12 @@ export async function runSend(
       payload,
       targetReplay: { replay: deps.targetReplay },
     });
+    // events only exist when a sessionId was given, so the session is
+    // always defined on this path (the assertion is type-level only).
+    if (input.steal === true && deps.sourceSteal !== undefined) {
+      await deps.sourceSteal(sessionId!);
+      return { mode: "pushed", envelope, report, stolenFromSource: true };
+    }
     return { mode: "pushed", envelope, report };
   }
 
