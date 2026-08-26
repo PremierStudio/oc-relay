@@ -9,7 +9,7 @@ sessions to idle boxes, offload to free up your laptop, pick up exactly
 where you left off on any device. One command, even if the target is
 offline right now.
 
-[![CI](https://github.com/PremierStudio/oc-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/PremierStudio/oc-relay/actions/workflows/ci.yml)
+[![CI](https://github.com/itz4blitz/oc-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/itz4blitz/oc-relay/actions/workflows/ci.yml)
 ![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 ![mutation score](https://img.shields.io/badge/mutation%20score-100%25-brightgreen)
 ![mutants](https://img.shields.io/badge/mutants%20killed-2008%20%2F%202008-blue)
@@ -46,7 +46,7 @@ machine the worktree, session, and agent environment land together:
 new in the handoff, your **agent environment** travels too — MCP
 servers (secrets redacted to `${VAR}` references with a `requiredEnv`
 list), skills, and rules are snapshotted on send and applied on the
-target through `@premierstudio/ai-tools` when installed there
+target through `@itz4blitz/ai-tools` when installed there
 (`.opencode/relay-environment.json` is always written as the
 reviewable source of truth). Hooks are functions, not data — they live
 in committed config and travel with git.

@@ -432,7 +432,7 @@ await pause(300);
 console.log("");
 console.log(BAR);
 console.log(C.bold("  the work follows you."));
-console.log(C.dim("  npm install -g oc-relay · https://github.com/PremierStudio/oc-relay"));
+console.log(C.dim("  npm install -g oc-relay · https://github.com/itz4blitz/oc-relay"));
 console.log(BAR);
 console.log("");
 

@@ -4,10 +4,10 @@
   "description": "Declarative environments + cross-machine session relay for OpenCode",
   "type": "module",
   "license": "MIT",
-  "author": "PremierStudio",
+  "author": "itz4blitz",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PremierStudio/oc-relay.git"
+    "url": "git+https://github.com/itz4blitz/oc-relay.git"
   },
   "keywords": [
     "opencode",

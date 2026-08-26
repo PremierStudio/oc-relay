@@ -42,10 +42,10 @@ const toPluginDefinition = (snap: EnvironmentSnapshot): Record<string, unknown> 
 /** Dynamic import shim; decoupled so the package is optional at type time. */
 type AiToolsModule = Record<string, unknown>;
 const defaultImport = (): Promise<AiToolsModule> =>
-  import(/* ai-tools is an optional runtime adapter */ "@premierstudio/ai-tools" as string).then(
+  import(/* ai-tools is an optional runtime adapter */ "@itz4blitz/ai-tools" as string).then(
     undefined,
     (err: unknown) => {
-      throw new Error(`@premierstudio/ai-tools not available: ${(err as Error).message}`);
+      throw new Error(`@itz4blitz/ai-tools not available: ${(err as Error).message}`);
     },
   );
 

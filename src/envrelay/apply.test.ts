@@ -92,11 +92,11 @@ describe("applyEnvironmentSnapshot", () => {
   });
 
   it("exercises the real dynamic import when no shim is provided", async () => {
-    // @premierstudio/ai-tools is not installed in this workspace, so the
+    // @itz4blitz/ai-tools is not installed in this workspace, so the
     // default loader must fail cleanly into aiToolsError — never throw.
     const r = await applyEnvironmentSnapshot("/r", snap, ports());
     expect(r.aiToolsInstalled).toBe(false);
-    expect(r.aiToolsError).toMatch(/not available/);
+    expect(r.aiToolsError).toMatch(/@itz4blitz\/ai-tools not available/);
   });
 
   it("reports an ai-tools without the installer export", async () => {

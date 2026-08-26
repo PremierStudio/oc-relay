@@ -537,7 +537,7 @@ describe("parseEnvManifest", () => {
 
   it("parses the full reference manifest", () => {
     const result = parseEnvManifest({
-      $schema: "https://raw.githubusercontent.com/PremierStudio/oc-relay/main/schema/env.v1.json",
+      $schema: "https://raw.githubusercontent.com/itz4blitz/oc-relay/main/schema/env.v1.json",
       name: "sampleapp",
       devcontainer: { config: ".devcontainer/devcontainer.json" },
       compose: { files: ["docker-compose.yml"], project: "${repo}-${worktreeSlug}" },
