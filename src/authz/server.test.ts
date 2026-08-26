@@ -128,22 +128,32 @@ describe("approval server", () => {
   });
 
   it("binds the exact requested port when given", async () => {
+    // Windows runners exclude large swaths of high ports (WinNAT); ask the
+    // OS for a free ephemeral port first, then request it explicitly.
+    const probeServer = await startApprovalServer(
+      { store: memoryAuthzStore(), crypto: fixedCrypto() },
+      { port: 0 },
+    );
+    const port = new URL(probeServer.url).port;
+    await new Promise((resolve) => probeServer.server.close(resolve));
+
     const { server, url } = await startApprovalServer(
       { store: memoryAuthzStore(), crypto: fixedCrypto() },
-      { port: 49777 },
+      { port: Number(port) },
     );
-    expect(url).toBe("http://127.0.0.1:49777");
+    expect(url).toBe(`http://127.0.0.1:${port}`);
     server.close();
   });
 
   it("rejects when the requested port is already taken", async () => {
     const first = await startApprovalServer(
       { store: memoryAuthzStore(), crypto: fixedCrypto() },
-      { port: 49778 },
+      { port: 0 },
     );
+    const port = new URL(first.url).port;
     const err = await startApprovalServer(
       { store: memoryAuthzStore(), crypto: fixedCrypto() },
-      { port: 49778 },
+      { port: Number(port) },
     ).then(
       () => null,
       (e: unknown) => e,

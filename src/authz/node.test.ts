@@ -183,9 +183,31 @@ describe("fileAuthzStore update (lock + atomic write)", () => {
     await rm(`${path}.lock`, { recursive: true, force: true });
   });
 
-  it("propagates non-EEXIST lock errors untouched", async () => {
-    // A read-only parent makes open(wx) fail with EACCES — a genuinely
-    // non-lock failure that must surface as-is, not as contention.
+  it("propagates non-lock failures untouched", async () => {
+    // A regular FILE where the store's parent directory belongs makes the
+    // update fail inside mkdir/open with a genuine filesystem error on
+    // every platform (POSIX ENOTDIR/EACCES, Windows EACCES/EPERM/ENOENT) —
+    // which must surface as-is, never as lock contention.
+    const blocker = join(dir, "blocker-file");
+    await writeFile(blocker, "x", "utf8");
+    const store = fileAuthzStore(join(blocker, "x.json"), { sleep: fastSleep });
+    const err = await store
+      .update?.((records) => records)
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(err).toBeTruthy();
+    const code = (err as NodeJS.ErrnoException).code;
+    expect(code).toBeTruthy();
+    expect((err as Error).message).not.toContain("lock contention");
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "propagates non-EEXIST lock-open errors untouched (posix)",
+    async () => {
+    // A read-only parent lets mkdir succeed but makes open(wx) fail with
+    // a non-EEXIST error that must be rethrown verbatim (line: throw err).
     const ro = join(dir, "readonly-dir");
     await mkdir(ro, { recursive: true });
     await writeFile(join(ro, "keeper"), "x", "utf8");
@@ -198,10 +220,30 @@ describe("fileAuthzStore update (lock + atomic write)", () => {
           () => null,
           (e: unknown) => e,
         );
-      expect((err as NodeJS.ErrnoException)?.code).toBe("EACCES");
+      expect(["EACCES", "EPERM"]).toContain((err as NodeJS.ErrnoException)?.code);
+      expect((err as Error).message).not.toContain("lock contention");
     } finally {
       await chmod(ro, 0o755);
     }
+  });
+
+  it.skipIf(process.platform !== "win32")(
+    "propagates non-EEXIST lock-open errors untouched (windows)",
+    async () => {
+    // `?` is illegal in Windows filenames: mkdir of the valid parent
+    // succeeds, then open(wx) fails with EINVAL/ENOENT — not EEXIST.
+    const parent = join(dir, "win-badname-dir");
+    await mkdir(parent, { recursive: true });
+    const store = fileAuthzStore(join(parent, "x?.json"), { sleep: fastSleep });
+    const err = await store
+      .update?.((records) => records)
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(err).toBeTruthy();
+    expect((err as NodeJS.ErrnoException).code).not.toBe("EEXIST");
+    expect((err as Error).message).not.toContain("lock contention");
   });
 
   it("writes atomically: plain write also leaves no tmp residue", async () => {

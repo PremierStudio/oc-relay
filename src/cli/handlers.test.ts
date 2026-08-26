@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { dirname, join } from "node:path";
 import type { FleetConfig } from "./config.js";
 import {
   loadFleet,
@@ -779,13 +780,14 @@ describe("runReceive git-bundle fetch", () => {
       },
       { bundlePath: "/carry/b.json", into: "/into" },
     );
-    expect(calls[0]).toEqual(["fetch", "/carry/b.bundle", "opencode/wip-thing"]);
+    const sidecar = join(dirname("/carry/b.json"), "b.bundle");
+    expect(calls[0]).toEqual(["fetch", sidecar, "opencode/wip-thing"]);
     expect(calls[1]).toEqual([
       "worktree",
       "add",
       "-b",
       "opencode/wip-thing",
-      "/into/.worktrees/wip-thing",
+      join("/into", ".worktrees", "wip-thing"),
       "FETCH_HEAD",
     ]);
     expect(r.branch).toBe("opencode/wip-thing");

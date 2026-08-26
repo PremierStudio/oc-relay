@@ -1,4 +1,3 @@
-import { exec } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -49,8 +48,9 @@ describe("fileConfigStore", () => {
   });
 
   it("treats non-object configs (arrays, scalars, null) as empty", async () => {
-    for (const content of ["[]", "42", '"s"', "null"]) {
-      const path = join(dir, `scalar-${content}.json`);
+    for (const [i, content] of ["[]", "42", '"s"', "null"].entries()) {
+      // index-based names: quote characters are invalid in Windows filenames
+      const path = join(dir, `scalar-${i}.json`);
       await writeFile(path, content, "utf8");
       await expect(fileConfigStore(path).read()).resolves.toEqual({});
     }
@@ -65,10 +65,13 @@ describe("fileConfigStore", () => {
 
 describe("execHookRunner", () => {
   it("resolves code 0, captures stdout, and respects cwd", async () => {
-    const r = await execHookRunner(dir).run("pwd");
+    // node -p prints without a shell builtin; realpath normalizes the
+    // macOS /var → /private/var symlink so the comparison is portable.
+    const r = await execHookRunner(dir).run('node -p "process.cwd()"');
     expect(r.code).toBe(0);
-    expect(r.command).toBe("pwd");
-    expect(r.stdout.trim()).toBe(dir);
+    expect(r.command).toBe('node -p "process.cwd()"');
+    const { realpath } = await import("node:fs/promises");
+    expect(r.stdout.trim()).toBe(await realpath(dir));
     expect(r.durationMs).toBeGreaterThanOrEqual(0);
     expect(r.durationMs).toBeLessThan(10_000);
   });
@@ -78,20 +81,18 @@ describe("execHookRunner", () => {
     expect(r.code).toBe(3);
   });
 
-  it("maps spawn failures to non-zero (shell 127, or fallback 1)", async () => {
+  it("maps spawn failures to non-zero (shell 127/9009, or fallback 1)", async () => {
     const r = await execHookRunner().run("definitely-not-a-real-command-xyz");
-    expect([1, 127]).toContain(r.code);
+    expect([1, 127, 9009]).toContain(r.code);
   });
 
   it("runs through a shell so arguments and pipes work", async () => {
-    let out = "";
-    await new Promise<void>((resolve) => {
-      exec('echo one two | tr " " "-"', { cwd: dir }, (_err, stdout) => {
-        out = stdout;
-        resolve();
-      });
-    });
-    expect(out.trim()).toBe("one-two");
+    // node-to-node pipeline: identical semantics on sh, bash, and cmd.exe.
+    const r = await execHookRunner(dir).run(
+      'node -p 6*7 | node -e "process.stdin.pipe(process.stdout)"',
+    );
+    expect(r.code).toBe(0);
+    expect(r.stdout.trim()).toBe("42");
   });
 
   it("falls back to code 1 when the process dies without an exit code (signal)", async () => {
@@ -99,9 +100,10 @@ describe("execHookRunner", () => {
     expect(r.code).not.toBe(0);
   });
 
-  it("normalizes shell command-not-found (exit 127) to a numeric code", async () => {
+  it("normalizes shell command-not-found to a numeric code", async () => {
     const r = await execHookRunner().run("definitely-not-a-real-command-xyz");
-    expect(r.code).toBe(127);
+    expect(typeof r.code).toBe("number");
+    expect(r.code).not.toBe(0);
   });
 
   it("listDir returns empty for a missing directory", async () => {

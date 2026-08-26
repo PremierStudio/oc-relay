@@ -44,33 +44,31 @@ export function fileConfigStore(path: string): ConfigStore {
   };
 }
 
-export function execHookRunner(cwd?: string): HookRunner {
-  return {
-    run: async (command: string): Promise<HookResult> => {
-      const started = Date.now();
-      const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
-        (resolve) => {
-          exec(command, { cwd }, (error, stdout, stderr) => {
-            // Via the shell, error.code is numeric on exit and absent when signalled.
-            const raw = (error as { code?: number } | undefined)?.code;
-            resolve({
-              code: error ? (raw ?? 1) : 0,
-              stdout,
-              stderr,
-            });
+export const execHookRunner = (cwd?: string): HookRunner => ({
+  run: async (command: string): Promise<HookResult> => {
+    const started = Date.now();
+    const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
+      (resolve) => {
+        exec(command, { cwd }, (error, stdout, stderr) => {
+          // Via the shell, error.code is numeric on exit and absent when signalled.
+          const raw = (error as { code?: number } | undefined)?.code;
+          resolve({
+            code: error ? (raw ?? 1) : 0,
+            stdout,
+            stderr,
           });
-        },
-      );
-      return {
-        command,
-        code: result.code,
-        durationMs: Date.now() - started,
-        stdout: result.stdout,
-        stderr: result.stderr,
-      };
-    },
-  };
-}
+        });
+      },
+    );
+    return {
+      command,
+      code: result.code,
+      durationMs: Date.now() - started,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    };
+  },
+});
 
 /** Test/inspection helper: list files remaining in a directory. */
 export async function listDir(path: string): Promise<string[]> {
