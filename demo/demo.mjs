@@ -193,9 +193,9 @@ function segment(title, tight = false) {
  * pauses are); set DEMO_TYPE=0 to paste instead.
  */
 const TYPE = process.env.DEMO_TYPE !== "0";
-async function prompt(cwd, cmd) {
+async function prompt(cwd, cmd, tight = false) {
   const here = cwd === repo ? "~/code/myapp" : cwd === receiver ? "~/srv/myapp" : "~";
-  console.log("");
+  if (!tight) console.log("");
   process.stdout.write(`${C.dim(`${here} $`)} `);
   if (!TYPE) {
     process.stdout.write(`${C.green(cmd)}\n`);
@@ -305,7 +305,8 @@ await pause(350);
 // tight: the QR mint prints 33 rows; without the blank it lands with
 // claim url + token + the complete QR visible at rest (26-row screen)
 segment("5 · sensitive work needs a human yes", true);
-await prompt(repo, "relay authz new --action deploy --label 'ship it' --ttl 120 --host 127.0.0.1 --port 49499");
+// (--ttl omitted: 300s default — keeps the echoed command on one row)
+await prompt(repo, "relay authz new --action deploy --label 'ship it' --host 127.0.0.1 --port 49499", true);
 const minted = await relay([
   "authz",
   "new",
@@ -313,8 +314,6 @@ const minted = await relay([
   "deploy",
   "--label",
   "ship it",
-  "--ttl",
-  "120",
   "--host",
   "127.0.0.1",
   "--port",
