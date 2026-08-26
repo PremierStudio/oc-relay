@@ -27,6 +27,12 @@ a player, not an animator. Regenerate after any UX change with
 
 ## `demo/demo.mjs` — the full guided tour
 
-`npm run demo` — everything the hero shows plus the offline bundle path
+`npm run demo` — works straight after `git clone && npm install`: the
+tour builds `dist/` on first run (it's gitignored), then drives the real
+binary through everything the hero shows plus the offline bundle path
 (receive with WIP commits), phone approvals with a live QR, and
-doctor→apply→doctor convergence. `DEMO_PACE=2` slows it for presenting.
+doctor→apply→doctor convergence.
+
+Knobs: `DEMO_PACE=2` slows the pauses (presenting), `DEMO_TYPE=0` pastes
+commands instantly (skimming), `DEMO_RECORD=path.jsonl` captures the
+timed stream for the GIF renderer.

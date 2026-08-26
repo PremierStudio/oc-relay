@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as sleep } from "node:timers/promises";
+import { ensureBuild } from "./ensure-build.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const RELAY = join(ROOT, "bin", "relay.mjs");
@@ -171,6 +172,16 @@ const baseEnv = {
 };
 
 // ---------- presentation ----------
+// Fresh port per run: a fixed one breaks the tour the moment something
+// else is listening on it.
+const APPROVALS_PORT = await (async () => {
+  const probe = createServer();
+  await new Promise((r) => probe.listen(0, "127.0.0.1", r));
+  const { port } = probe.address();
+  await new Promise((r) => probe.close(r));
+  return port;
+})();
+
 function segment(title, tight = false) {
   // Fresh screen per segment — a tour that scrolls lines off while
   // you read them feels bad on video; each beat gets a clean slate.
@@ -238,8 +249,12 @@ console.log("");
 console.log(C.bold("  oc-relay — the guided tour"));
 console.log(C.dim("  real binary · synthetic fleet · loopback only"));
 
+// The binary lives in dist/ (gitignored) — build it if this is a fresh
+// clone, before the first relay invocation can fail.
+await ensureBuild();
+
 // Optional recorder: DEMO_RECORD=path emits {t,s} JSONL — the raw timed
-// ANSI stream that render-svg.mjs turns into an animated SVG.
+// ANSI stream that render-gif.mjs turns into an animated GIF.
 let record = null;
 let t0 = 0;
 if (process.env.DEMO_RECORD !== undefined) {
@@ -253,6 +268,7 @@ process.stdout.write = (chunk, ...rest) => {
   return realWrite(chunk, ...rest);
 };
 t0 = Date.now();
+await pause(1400); // let the title land before segment 1 clears the screen
 
 // ── 1. your fleet is the computer ─────────────────────────────
 segment("1 · your fleet — every machine work can go to");
@@ -306,7 +322,7 @@ await pause(350);
 // claim url + token + the complete QR visible at rest (26-row screen)
 segment("5 · sensitive work needs a human yes", true);
 // (--ttl omitted: 300s default — keeps the echoed command on one row)
-await prompt(repo, "relay authz new --action deploy --label 'ship it' --host 127.0.0.1 --port 49499", true);
+await prompt(repo, `relay authz new --action deploy --label 'ship it' --host 127.0.0.1 --port ${APPROVALS_PORT}`, true);
 const minted = await relay([
   "authz",
   "new",
@@ -317,7 +333,7 @@ const minted = await relay([
   "--host",
   "127.0.0.1",
   "--port",
-  "49499",
+  String(APPROVALS_PORT),
 ]);
 const token = /token \(shown once, never stored\): (\S+)/.exec(minted.out)?.[1] ?? "";
 const id = /request:\s+(\S+)/.exec(minted.out)?.[1] ?? "";
@@ -326,14 +342,20 @@ await pause(300);
 // QR + claim URL fill a screen on their own — a second screen for the
 // approval side keeps every segment inside 26 rows (no scrolling)
 segment("   …phone taps → approved");
-await prompt(repo, "relay serve-approvals --port 49499 &   # phone taps the claim URL…");
-const approvals = spawn(process.execPath, [RELAY, "serve-approvals", "--port", "49499"], {
+await prompt(repo, `relay serve-approvals --port ${APPROVALS_PORT} &   # phone taps the claim URL…`);
+const approvals = spawn(process.execPath, [RELAY, "serve-approvals", "--port", String(APPROVALS_PORT)], {
   env: { ...baseEnv },
   stdio: ["ignore", "ignore", "ignore"],
 });
 await pause(500);
-const phone = await fetch(`http://127.0.0.1:49499/approve?id=${id}&token=${token}`);
-console.log(`  ${C.yellow("phone →")} ${await phone.text()}`);
+let phoneLine = "  phone → (server did not come up)";
+try {
+  const phone = await fetch(`http://127.0.0.1:${APPROVALS_PORT}/approve?id=${id}&token=${token}`);
+  phoneLine = `  ${C.yellow("phone →")} ${await phone.text()}`;
+} catch {
+  // surfaced above instead of an unhandled rejection
+}
+console.log(phoneLine);
 approvals.kill("SIGTERM");
 await new Promise((r) => approvals.on("exit", r));
 

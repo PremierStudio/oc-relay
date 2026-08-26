@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { ensureBuild } from "./ensure-build.mjs";
 
 const run = promisify(execFile);
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -22,6 +23,9 @@ const RELAY = join(ROOT, "bin", "relay.mjs");
 function dirname(p) {
   return p.slice(0, p.lastIndexOf("/"));
 }
+
+// dist/ is gitignored — a fresh clone has none, and the binary needs it.
+await ensureBuild();
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
   green: (s) => `\x1b[32m${s}\x1b[0m`,
