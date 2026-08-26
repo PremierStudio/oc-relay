@@ -9,6 +9,11 @@ Use GitHub's private vulnerability reporting on this repository
 
 oc-relay touches credentials and executes provisioning commands. Design commitments:
 
+- The published package has **zero runtime dependencies** — audit findings in
+  dev tooling (release/mutation chains) never reach users. Known open
+  advisories in the `semantic-release → npm` dev chain have no patched
+  upstream release; they execute only inside CI publishing jobs.
+
 - Secret providers (1Password service account, sops+age, direnv, plain env) are the only
   sources of credential material. Resolved values are cached on disk at mode `0600` only,
   under an explicit user-configured cache path, and never written into the repo.
