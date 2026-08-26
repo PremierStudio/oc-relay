@@ -34,6 +34,8 @@ import {
   type AuthzStore,
 } from "../authz/index.js";
 import { claimUrl } from "../authz/claim.js";
+import { buildEnvironmentSnapshot, type SnapshotPorts } from "../envrelay/snapshot.js";
+import { pluginFileContent, commandFileContent } from "../plugin/templates.js";
 
 export const DEFAULT_APPROVALS_PORT = 49400;
 
@@ -48,6 +50,8 @@ export interface Bundle {
   exportedJson?: string;
   /** Basename of a git-bundle sidecar carrying the branch's WIP commits. */
   gitBundle?: string;
+  /** Relay-env.v1 agent-environment snapshot (MCP/skills/rules/agents). */
+  environment?: unknown;
 }
 
 /** Serialize the out-of-band bundle (mailbox / manual carry). */
@@ -56,9 +60,9 @@ export function renderBundle(bundle: Bundle): string {
 }
 
 /** Parse a carried bundle back into parts. */
-export function parseBundle(input: unknown): { envelope: unknown; payload: { events?: unknown[]; exportedJson?: string; gitBundle?: string } } {
+export function parseBundle(input: unknown): { envelope: unknown; payload: { events?: unknown[]; exportedJson?: string; gitBundle?: string; environment?: unknown } } {
   const rec = (input ?? {}) as Record<string, unknown>;
-  const payload: { events?: unknown[]; exportedJson?: string; gitBundle?: string } = {};
+  const payload: { events?: unknown[]; exportedJson?: string; gitBundle?: string; environment?: unknown } = {};
   if (Array.isArray(rec["events"])) {
     payload.events = rec["events"];
   }
@@ -68,7 +72,7 @@ export function parseBundle(input: unknown): { envelope: unknown; payload: { eve
   if (typeof rec["gitBundle"] === "string") {
     payload.gitBundle = rec["gitBundle"];
   }
-  return { envelope: rec["envelope"], payload };
+  return { envelope: rec["envelope"], payload: { ...payload, environment: rec["environment"] } };
 }
 
 export interface FleetLoadResult {
@@ -163,6 +167,8 @@ export interface SendCommandDeps {
   /** Where a bundle lands when direct push is not viable. */
   writeBundle?: (path: string, contents: string) => Promise<void>;
   readFile?: (path: string) => Promise<string>;
+  /** When set, the send snapshots the agent environment into the payload. */
+  snapshotEnv?: SnapshotPorts;
   /**
    * Creates a git-bundle sidecar next to `--bundle-out` carrying the
    * branch's WIP commits (offline code transport). Returns the sidecar
@@ -269,6 +275,17 @@ export async function runSend(
   if (gitBundle !== "") {
     out.gitBundle = gitBundle;
   }
+  if (deps.snapshotEnv !== undefined) {
+    const snap = await buildEnvironmentSnapshot(deps.repoDir, deps.hostname, deps.snapshotEnv);
+    const declarative =
+      snap.mcpServers.length > 0 ||
+      snap.skills.length > 0 ||
+      snap.rules.length > 0 ||
+      snap.agents.length > 0;
+    if (declarative) {
+      out.environment = snap;
+    }
+  }
   await deps.writeBundle(input.bundleOut, renderBundle(out));
   return { mode: "bundled", envelope, bundlePath: input.bundleOut };
 }
@@ -278,6 +295,8 @@ export interface ReceiveCommandDeps {
   files: FileSink;
   readFile: (path: string) => Promise<string>;
   importer?: ImporterPort;
+  /** When set, a carried environment snapshot is applied on this machine. */
+  applyEnv?: (repoDir: string, snapshot: unknown) => Promise<{ aiToolsInstalled: boolean; aiToolsError?: string }>;
 }
 
 export interface ReceiveCliReport {
@@ -286,6 +305,7 @@ export interface ReceiveCliReport {
   anchorPath: string;
   targetSessionId?: string;
   strategy?: SendStrategy;
+  environment?: { aiToolsInstalled: boolean; aiToolsError?: string };
 }
 
 /** Execute `relay receive` from a carried bundle into a local repo. */
@@ -321,15 +341,64 @@ export async function runReceive(
   if (deps.importer !== undefined) {
     receiveOpts.importer = { importExported: deps.importer.importExported };
   }
+  let envReport: { aiToolsInstalled: boolean; aiToolsError?: string } | undefined;
+  if (payload.environment !== undefined && deps.applyEnv !== undefined) {
+    envReport = await deps.applyEnv(input.into, payload.environment);
+  }
   const r = await receiveHandoff(receiveOpts);
 
-  return {
+  const outReport: ReceiveCliReport = {
     directory: r.directory,
     branch: r.branch,
     anchorPath: r.anchorPath,
     ...(r.targetSessionId !== undefined ? { targetSessionId: r.targetSessionId } : {}),
     ...(r.strategy !== undefined ? { strategy: r.strategy } : {}),
   };
+  if (envReport !== undefined) {
+    outReport.environment = envReport;
+  }
+  return outReport;
+}
+
+export interface InitDeps {
+  repoDir: string;
+  writeFile: (path: string, contents: string) => Promise<void>;
+  exists: (path: string) => Promise<boolean>;
+  /** Package name the generated plugin should document. */
+  pkgName?: string;
+}
+
+export interface InitReport {
+  pluginPath: string;
+  commandPath: string;
+  pluginWritten: boolean;
+  commandWritten: boolean;
+  existing: string[];
+}
+
+/**
+ * `relay init` — install the OpenCode UI into a project: an agent-tools
+ * plugin (`relay_targets` / `relay_send`) plus the `/relay` slash
+ * command. Idempotent unless `force`.
+ */
+export async function runInit(
+  deps: InitDeps,
+  input: { force?: boolean } = {},
+): Promise<InitReport> {
+  const pluginPath = `${deps.repoDir}/.opencode/plugin/relay.ts`;
+  const commandPath = `${deps.repoDir}/.opencode/command/relay.md`;
+  const existing: string[] = [];
+  const pluginWritten = input.force === true || !(await deps.exists(pluginPath));
+  const commandWritten = input.force === true || !(await deps.exists(commandPath));
+  if (!pluginWritten) existing.push(pluginPath);
+  if (!commandWritten) existing.push(commandPath);
+  if (pluginWritten) {
+    await deps.writeFile(pluginPath, pluginFileContent(deps.pkgName ?? "oc-relay"));
+  }
+  if (commandWritten) {
+    await deps.writeFile(commandPath, commandFileContent(deps.pkgName ?? "oc-relay"));
+  }
+  return { pluginPath, commandPath, pluginWritten, commandWritten, existing };
 }
 
 // --- Phase 4: discovery-backed commands ---

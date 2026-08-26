@@ -11,6 +11,7 @@ import {
   runAuthzNew,
   requireApproved,
   runEnroll,
+  runInit,
   runPing,
   runReceive,
   runSend,
@@ -826,6 +827,242 @@ describe("runReceive git-bundle fetch", () => {
     );
     expect(calls).toHaveLength(1);
     expect(calls[0]?.[0]).toBe("worktree");
+  });
+});
+
+describe("runInit (OpenCode UI install)", () => {
+  const mk = (existing: Record<string, boolean>) => ({
+    repoDir: "/proj",
+    writeFile: async () => undefined,
+    exists: async (p: string) => existing[p] === true,
+    pkgName: "oc-relay",
+  });
+
+  it("writes plugin and command when neither exists", async () => {
+    const r = await runInit(mk({}), {});
+    expect(r.pluginWritten).toBe(true);
+    expect(r.commandWritten).toBe(true);
+    expect(r.existing).toEqual([]);
+    expect(r.pluginPath).toBe("/proj/.opencode/plugin/relay.ts");
+    expect(r.commandPath).toBe("/proj/.opencode/command/relay.md");
+  });
+
+  it("keeps existing files and lists them", async () => {
+    const r = await runInit(
+      mk({
+        "/proj/.opencode/plugin/relay.ts": true,
+        "/proj/.opencode/command/relay.md": true,
+      }),
+      {},
+    );
+    expect(r.pluginWritten).toBe(false);
+    expect(r.commandWritten).toBe(false);
+    expect(r.existing).toHaveLength(2);
+  });
+
+  it("--force overwrites even when present", async () => {
+    const r = await runInit(mk({ "/proj/.opencode/plugin/relay.ts": true }), { force: true });
+    expect(r.pluginWritten).toBe(true);
+    expect(r.commandWritten).toBe(true);
+  });
+
+  it("generated plugin registers both tools and the command drives the CLI", async () => {
+    const written: Record<string, string> = {};
+    await runInit(
+      {
+        repoDir: "/p",
+        writeFile: async (p, c) => {
+          written[p] = c;
+        },
+        exists: async () => false,
+      },
+      {},
+    );
+    const plugin = written["/p/.opencode/plugin/relay.ts"] ?? "";
+    expect(plugin).toContain("relay_targets");
+    expect(plugin).toContain("relay_send");
+    expect(plugin).toContain('"relay"');
+    const command = written["/p/.opencode/command/relay.md"] ?? "";
+    expect(command).toContain("allowed-tools: Bash(relay:*)");
+  });
+});
+
+describe("runSend environment snapshot", () => {
+  const fleet: FleetConfig = {
+    targets: { t: { baseUrl: "http://t", password: "p", repoDir: "/work/SampleApp" } },
+  };
+  const base = () => ({
+    fleet,
+    hostname: "laptop",
+    repoDir: "/work/cs",
+    now: () => new Date("2026-08-26T12:00:00.000Z"),
+    currentBranch: async () => "main",
+    originUrl: async () => "https://github.com/x/SampleApp.git",
+    writeBundle: async () => undefined,
+  });
+
+  it("attaches the environment to the bundle when anything is declarative", async () => {
+    const written: Record<string, string> = {};
+    await runSend(
+      {
+        ...base(),
+        snapshotEnv: {
+          readFile: async (p) =>
+            p === "/work/cs/opencode.json"
+              ? JSON.stringify({ mcpServers: { gh: { command: "npx", env: { T: "sekret" } } } })
+              : "",
+          listDir: async () => [],
+          exists: async (p) => p === "/work/cs/opencode.json",
+          now: () => new Date("2026-08-26T12:00:00.000Z"),
+        },
+        writeBundle: async (p, c) => void (written[p] = c),
+      },
+      { targetName: "t", bundleOut: "/b.json" },
+    );
+    const carried = JSON.parse(written["/b.json"] ?? "{}");
+    expect(carried.environment.version).toBe("relay-env.v1");
+    expect(JSON.stringify(carried)).not.toContain("sekret");
+  });
+
+  it("attaches the environment when two surfaces are populated", async () => {
+    // two surfaces: a flipped + → - anywhere would zero/negate the sum
+    const written: Record<string, string> = {};
+    await runSend(
+      {
+        ...base(),
+        snapshotEnv: {
+          readFile: async (p) =>
+            p === "/work/cs/opencode.json"
+              ? JSON.stringify({ mcpServers: { gh: { command: "npx" } } })
+              : "---\nx\n---\nbody",
+          listDir: async (p) => (p.endsWith("/command") ? ["one.md"] : []),
+          exists: async (p) =>
+            p === "/work/cs/opencode.json" || p === "/work/cs/.opencode/command",
+          now: () => new Date("2026-08-26T12:00:00.000Z"),
+        },
+        writeBundle: async (p, c) => void (written[p] = c),
+      },
+      { targetName: "t", bundleOut: "/b.json" },
+    );
+    const carried = JSON.parse(written["/b.json"] ?? "{}");
+    expect(carried.environment.mcpServers).toHaveLength(1);
+    expect(carried.environment.skills).toHaveLength(1);
+  });
+
+  it("attaches the environment when exactly one surface is populated", async () => {
+    const mkPorts = (files: Record<string, string>, dirs: Record<string, string[]> = {}) => ({
+      readFile: async (p: string) => files[p] ?? "",
+      listDir: async (p: string) => dirs[p] ?? [],
+      exists: async (p: string) => p in files || p in dirs,
+      now: () => new Date("2026-08-26T12:00:00.000Z"),
+    });
+    const cases = [
+      { label: "skills", ports: mkPorts({}, { "/work/cs/.opencode/command": ["s.md"] }) },
+      { label: "rules", ports: mkPorts({ "/work/cs/AGENTS.md": "be kind" }) },
+      { label: "agents", ports: null }, // agents never come from the filesystem: use mcp as the fourth arm
+      { label: "mcp", ports: mkPorts({ "/work/cs/opencode.json": JSON.stringify({ mcpServers: { g: { command: "n" } } }) }) },
+    ];
+    for (const c of cases) {
+      if (c.ports === null) continue;
+      const written: Record<string, string> = {};
+      await runSend(
+        { ...base(), snapshotEnv: c.ports, writeBundle: async (p, ch) => void (written[p] = ch) },
+        { targetName: "t", bundleOut: "/b.json" },
+      );
+      const carried = JSON.parse(written["/b.json"] ?? "{}");
+      expect(carried.environment, c.label).toBeDefined();
+    }
+  });
+
+  it("omits the environment key for a bare machine", async () => {
+    const written: Record<string, string> = {};
+    await runSend(
+      {
+        ...base(),
+        snapshotEnv: {
+          readFile: async () => "",
+          listDir: async () => [],
+          exists: async () => false,
+          now: () => new Date("2026-08-26T12:00:00.000Z"),
+        },
+        writeBundle: async (p, c) => void (written[p] = c),
+      },
+      { targetName: "t", bundleOut: "/b.json" },
+    );
+    const carried = JSON.parse(written["/b.json"] ?? "{}");
+    expect(Object.keys(carried)).not.toContain("environment");
+  });
+});
+
+describe("runReceive environment apply", () => {
+  const validEnvelope = {
+    version: "handoff.v1",
+    createdAt: "2026-08-26T12:00:00.000Z",
+    sourceHost: "laptop",
+    repo: "SampleApp",
+    branch: "opencode/x",
+    worktreeName: "x",
+    context: {},
+    refs: [],
+  };
+  const git = { run: async () => ({ code: 0, stdout: "", stderr: "" }) };
+  const files = { write: async () => undefined };
+
+  it("applies a carried snapshot and reports it", async () => {
+    const applied: unknown[] = [];
+    const r = await runReceive(
+      {
+        git,
+        files,
+        readFile: async () =>
+          JSON.stringify({
+            envelope: validEnvelope,
+            environment: { version: "relay-env.v1", sourceHost: "l", createdAt: "t", mcpServers: [], skills: [{ id: "s", name: "s", content: "c" }], rules: [], agents: [], requiredEnv: [] },
+          }),
+        applyEnv: async (repoDir, snapshot) => {
+          applied.push({ repoDir, snapshot });
+          return { aiToolsInstalled: true };
+        },
+      },
+      { bundlePath: "/b.json", into: "/into" },
+    );
+    expect(r.environment).toEqual({ aiToolsInstalled: true });
+    expect(applied[0]).toMatchObject({ repoDir: "/into" });
+  });
+
+  it("tolerates a carried snapshot with no apply port wired", async () => {
+    const r = await runReceive(
+      {
+        git,
+        files,
+        readFile: async () =>
+          JSON.stringify({
+            envelope: validEnvelope,
+            environment: { version: "relay-env.v1", sourceHost: "l", createdAt: "t", mcpServers: [], skills: [], rules: [], agents: [], requiredEnv: [] },
+          }),
+      },
+      { bundlePath: "/b.json", into: "/into" },
+    );
+    expect(r.environment).toBeUndefined();
+    expect(r.branch).toBe("opencode/x");
+  });
+
+  it("skips apply entirely when no environment rode along", async () => {
+    let called = 0;
+    const r = await runReceive(
+      {
+        git,
+        files,
+        readFile: async () => JSON.stringify({ envelope: validEnvelope }),
+        applyEnv: async () => {
+          called++;
+          return { aiToolsInstalled: false };
+        },
+      },
+      { bundlePath: "/b.json", into: "/into" },
+    );
+    expect(called).toBe(0);
+    expect(r.environment).toBeUndefined();
   });
 });
 

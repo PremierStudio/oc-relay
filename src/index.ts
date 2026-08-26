@@ -127,6 +127,7 @@ export {
   runAuthzList,
   runAuthzNew,
   runEnroll,
+  runInit,
   runPing,
   runReceive,
   runSend,
@@ -138,6 +139,8 @@ export {
   type Bundle,
   type EnrollDeps,
   type EnrollOutcome,
+  type InitDeps,
+  type InitReport,
   type PingCandidate,
   type PingDeps,
   type PingResult,
@@ -147,6 +150,21 @@ export {
   type SendOutcome,
   type TargetSelection,
 } from "./cli/handlers.js";
+
+export {
+  applyEnvironmentSnapshot,
+  type ApplyPorts,
+} from "./envrelay/apply.js";
+export {
+  buildEnvironmentSnapshot,
+  isEnvironmentSnapshot,
+  type EnvAgent,
+  type EnvMcpServer,
+  type EnvRule,
+  type EnvSkill,
+  type EnvironmentSnapshot,
+  type SnapshotPorts,
+} from "./envrelay/snapshot.js";
 
 export {
   APPROVE_PATH,

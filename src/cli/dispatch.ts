@@ -44,7 +44,8 @@ export type CliCommand =
       /** Advertise https (e.g. behind `tailscale serve`). */
       https?: boolean;
     }
-  | { command: "serve-approvals"; port?: number; host?: string };
+  | { command: "serve-approvals"; port?: number; host?: string }
+  | { command: "init"; force?: boolean };
 
 export interface ParsedCli {
   ok: true;
@@ -70,6 +71,7 @@ export const CLI_USAGE = `usage:
   relay authz list
   relay authz approve --id ID --token TOKEN
   relay serve-approvals [--port N] [--host ADDR]
+  relay init [--force]                # install the OpenCode tools + /relay command
   relay doctor [--repo DIR]
   relay apply [--repo DIR] [--mode additive|manifest-only]
 
@@ -231,6 +233,11 @@ export function parseCli(argv: string[]): ParsedCli | CliUsageError {
       const worktreeRoot = requireFlag(flags, "worktree-root");
       if (worktreeRoot !== undefined) command.worktreeRoot = worktreeRoot;
       if (flags["https"] === true) command.https = true;
+      return { ok: true, command };
+    }
+    case "init": {
+      const command: Extract<CliCommand, { command: "init" }> = { command: "init" };
+      if (flags["force"] === true) command.force = true;
       return { ok: true, command };
     }
     case "doctor": {

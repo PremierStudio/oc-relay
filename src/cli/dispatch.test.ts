@@ -240,6 +240,14 @@ describe("parseCli", () => {
     });
   });
 
+  it("parses init with and without --force", () => {
+    expect(parseCli(["init"])).toStrictEqual({ ok: true, command: { command: "init" } });
+    expect(parseCli(["init", "--force"])).toStrictEqual({
+      ok: true,
+      command: { command: "init", force: true },
+    });
+  });
+
   it.each([
     [[], "no command given"],
     [["frobnicate"], "unknown command"],

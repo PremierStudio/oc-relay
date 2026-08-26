@@ -2,7 +2,7 @@
 // relay — OpenCode cross-machine session/worktree relay.
 // Thin binary: parse argv, wire real adapters, print the report.
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir, hostname, homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import {
@@ -33,6 +33,9 @@ import {
   runPing,
   runReceive,
   runSend,
+  runInit,
+  applyEnvironmentSnapshot,
+  buildEnvironmentSnapshot,
   startApprovalServer,
 } from "../dist/index.js";
 
@@ -335,6 +338,18 @@ async function main() {
             });
             return ok ? basename(sidecar) : "";
           },
+          // Agent environment rides along: MCP servers (secrets redacted
+          // to ${VAR} refs), skills, rules — applied on the target.
+          snapshotEnv: {
+            readFile: (p) => readFile(p, "utf8"),
+            listDir: async (p) => readdir(p),
+            exists: async (p) =>
+              stat(p).then(
+                () => true,
+                () => false,
+              ),
+            now: () => new Date(),
+          },
           ...(contextFile !== undefined
             ? { readFile: (p) => readFile(p, "utf8") }
             : {}),
@@ -358,6 +373,33 @@ async function main() {
       } else {
         console.log(`target unreachable; bundle written: ${outcome.bundlePath}`);
         console.log(`carry it over, then: relay receive --bundle ${outcome.bundlePath} --into <repo>`);
+      }
+      return;
+    }
+
+    if (cmd.command === "init") {
+      const report = await runInit(
+        {
+          repoDir: process.cwd(),
+          writeFile: async (p, c) => {
+            await mkdir(dirname(p), { recursive: true });
+            await writeFile(p, c);
+          },
+          exists: async (p) =>
+            stat(p).then(
+              () => true,
+              () => false,
+            ),
+          pkgName: "oc-relay",
+        },
+        cmd,
+      );
+      console.log(`plugin:  ${report.pluginPath}${report.pluginWritten ? "" : " (kept existing)"}`);
+      console.log(`command: ${report.commandPath}${report.commandWritten ? "" : " (kept existing)"}`);
+      if (report.pluginWritten || report.commandWritten) {
+        console.log("restart OpenCode, then try /relay — or ask the agent to use relay_send");
+      } else {
+        console.log("everything present — use --force to overwrite");
       }
       return;
     }
@@ -390,6 +432,14 @@ async function main() {
           files: nodeFileSink(),
           readFile: (p) => readFile(p, "utf8"),
           importer,
+          applyEnv: (repoDir, snapshot) =>
+            applyEnvironmentSnapshot(repoDir, snapshot, {
+              readFile: (p) => readFile(p, "utf8"),
+              writeFile: async (p, c) => {
+                await mkdir(dirname(p), { recursive: true });
+                await writeFile(p, c);
+              },
+            }),
         },
         { bundlePath: cmd.bundle, into: cmd.into },
       );
@@ -398,6 +448,13 @@ async function main() {
       console.log(`context:        ${r.anchorPath}`);
       if (r.targetSessionId !== undefined) {
         console.log(`session:        ${r.targetSessionId} (${r.strategy})`);
+      }
+      if (r.environment !== undefined) {
+        if (r.environment.aiToolsInstalled) {
+          console.log(`environment:    applied via ai-tools → .opencode/relay-environment.json`);
+        } else {
+          console.log(`environment:    saved to .opencode/relay-environment.json${r.environment.aiToolsError !== undefined ? ` (ai-tools: ${r.environment.aiToolsError})` : ""}`);
+        }
       }
       return;
     }
