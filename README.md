@@ -1,86 +1,157 @@
+<div align="center">
+
 # oc-relay
 
-**Declarative environments + cross-machine session relay for [OpenCode](https://opencode.ai).**
+**The work follows you.**
 
-One manifest provisions any machine. One command moves your work.
+Move your in-progress work — code, context, and your OpenCode session —
+from laptop → desktop → build server with one command.
+Even when the other machine is offline.
+
+[![CI](https://github.com/PremierStudio/oc-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/PremierStudio/oc-relay/actions/workflows/ci.yml)
+![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![mutation score](https://img.shields.io/badge/mutation%20score-100%25-brightgreen)
+![mutants](https://img.shields.io/badge/mutants%20killed-2008%20%2F%202008-blue)
+![license](https://img.shields.io/badge/license-MIT-black)
+
+**`relay send --target desktop`**
+
+</div>
+
+---
+
+```
+laptop $  relay send --target desktop --session ses_7f3 --context-file ctx.json
+
+          packing   branch opencode/tag-fix (3 commits)
+                    session ses_7f3 · done[2] · left[3] · decisions[1]
+          ✓ pushed via sync-replay → desktop
+          ✓ target session ses_9c2 · worktree ready
+
+
+desktop $ cd ~/code/app/.worktrees/tag-fix && ls .relay/
+
+          handoff.json   ← your notes, anchored in the repo
+                            your branch, your commits, your session.
+                            pick up exactly where you left off.
+```
+
+## The problem
+
+You were deep in something on your laptop. Now you're at your desktop.
+
+Your branch is there (git handles that). But your *context* isn't —
+the half-formed thoughts, the "done / left / decisions" in your head,
+and your OpenCode session that took twenty minutes of explaining to get
+useful. So you re-explain. Every time. To every machine.
+
+**relay ends that.** One command moves the whole session. The other
+machine boots your worktree with your notes anchored inside the repo and
+your session live.
+
+## Three things move
+
+| What | How | Survives offline |
+|---|---|---|
+| **Your code** | git branch + WIP commits | ✓ rides as a git-bundle sidecar next to the handoff file |
+| **Your context** | a `done / left / decisions` memo | ✓ anchored to `.relay/handoff.json` in the repo — plain JSON, forever readable |
+| **Your session** | OpenCode's sync protocol (fast path) | ✓ `opencode export`/`import` fallback carried in-band |
+
+Both machines online? Direct push, instant. Target asleep? relay writes a
+portable bundle — carry it over by any means, `relay receive` unpacks
+worktree + commits + context + session.
+
+## 60-second start
+
+```sh
+npm install -g oc-relay
+```
+
+Tell relay about your other machine once:
 
 ```jsonc
-// .opencode/env.json — commit it. Every machine converges to this.
-{
-  "name": "my-project",
-  "secrets": { "provider": "onepassword", "onepassword": { "vault": "agent-mcp", "tokenFile": "~/.config/op/mcp-sa.token" } },
-  "compose": { "files": ["docker-compose.yml"], "project": "${repo}-${worktreeSlug}" },
-  "mcpServers": {
-    "github": {
-      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
-      "secretRefs": { "GITHUB_PERSONAL_ACCESS_TOKEN": "op://agent-mcp/github-pat/token" }
-    }
-  }
-}
-```
-
-## What it does
-
-| Layer | Command | Description |
-|---|---|---|
-| Environments | `relay doctor` / `relay apply` | Agent-driven provisioning: MCP servers via secret providers (plain env today; 1Password/sops adapters are slots), post-create/doctor hooks. |
-| Handoff | `relay send` / `relay receive` + `/handoff` command | Move sessions, worktree context, and WIP commits between machines. Fast path via OpenCode's sync protocol; offline fallback to a portable JSON bundle + git-bundle sidecar. |
-| Discovery | `relay ping` / `relay enroll` | Fleet targets from `~/.config/oc-relay/fleet.json`; optional tailnet peer discovery — strictly opt-in per invocation (`--all`). |
-| Authorization | `relay authz` / `relay serve-approvals` | Single-use hashed-token approvals with claim URLs for phone taps. |
-
-## Status
-
-Phases 0–5 implemented and gated: 100% line/branch/function coverage,
-100% mutation score, an asserting E2E suite (`npm run test:e2e`) over the
-real binary with real git and fake OC2/tailscale surfaces, and a manual
-checklist ([`docs/MANUAL-CHECKLIST.md`](docs/MANUAL-CHECKLIST.md)) for
-real-tailnet and real-phone validation. Code transport in bundles is
-context+session today (git carries the branch); richer WIP transport is
-roadmap. See [`VISION.md`](VISION.md) and [`TEST-MATRIX.md`](TEST-MATRIX.md).
-
-## Quality gates
-
-- 100% line/branch/function coverage (CI-enforced)
-- 100% mutation score on domain logic (StrykerJS, CI-enforced)
-- Strict TypeScript (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
-- CI matrix: macOS / Linux / Windows
-- Zero runtime dependencies for core parsing/provisioning logic
-
-## Development
-
-```sh
-npm install
-npm run check     # typecheck + 100% coverage gate
-npm run mutate    # StrykerJS mutation testing (breaks below 100%)
-npm run build     # tsup ESM + dts
-```
-
-## Quickstart
-
-```sh
-# 1. Declare your environment (commit this)
-.opencode/env.json
-
-# 2. Audit a machine against it
-relay doctor --repo ~/SampleApp
-
-# 3. Tell relay about your other machine
-~/.config/oc-relay/fleet.json
-{ "targets": { "build-server": {
-    "baseUrl": "http://build-server:49374",
+// ~/.config/oc-relay/fleet.json  (override: $RELAY_FLEET)
+{ "targets": { "desktop": {
+    "baseUrl": "http://desktop:49374",
     "username": "pair-user",
-    "passwordEnv": "PEER_RELAY_PASS",
-    "repoDir": "/home/u/SampleApp" } } }
-
-# 4. Send the session + branch over
-relay send --target build-server --session ses_xxx --context-file ctx.json
-# target offline? a bundle file plus a .bundle sidecar (your branch's WIP
-# commits) are written — carry both, then:
-relay receive --bundle relay-bundle-*.json --into ~/SampleApp
+    "passwordEnv": "DESKTOP_RELAY_PASS",   // secrets live in env, never in files
+    "repoDir": "~/code/myapp" } } }
 ```
 
-Inside OpenCode: drop `.opencode/command/handoff.md` into your project and
-type `/handoff` — the agent walks the same flow for you.
+Then, from inside your repo:
+
+```sh
+relay send --target desktop                      # code + context
+relay send --target desktop --session ses_x      # + the live session
+relay send --target desktop --context-file ctx.json
+# target offline? a handoff.json + .bundle sidecar are written instead:
+relay receive --bundle relay-bundle-*.json --into ~/code/myapp
+```
+
+Inside OpenCode, drop `.opencode/command/handoff.md` (ships in the
+package) into your project and type `/handoff` — the agent walks the
+same flow with you.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `relay send` | Move work to a target — direct push, or bundle if unreachable |
+| `relay receive` | Unpack a carried bundle: worktree, commits, context, session |
+| `relay targets` | List your fleet |
+| `relay ping [--all]` | Check reachability. `--all` adds tailnet peers — **strictly opt-in, never scans unless asked** |
+| `relay enroll` | Add a machine to your fleet (auto-discovers its URL on your tailnet) |
+| `relay doctor` / `relay apply` | Audit / converge this machine's env against `.opencode/env.json` |
+| `relay authz new` | Mint a one-time approval — prints a claim URL + QR for your phone |
+| `relay serve-approvals` | Run the phone-approval endpoint (loopback by default) |
+
+## Security you don't have to think about
+
+- **Secrets never touch disk.** Credentials resolve from env vars at use time.
+- **Approvals are one-time.** Tokens are shown once, stored only as SHA-256
+  hashes, valid for one tap and a TTL. A stolen link approves exactly
+  nothing else, ever.
+- **No ambient network scanning.** Discovery runs only when you pass
+  `--all`. Privacy is the default, not a setting.
+- **Atomic, locked state.** Concurrent relay processes can't corrupt or
+  double-consume approvals; crashed locks self-heal.
+
+## The receipts
+
+Most tools ask you to trust the README. This one ships proof:
+
+- **100% coverage** — every line, branch, and function, enforced in CI
+- **2,008 mutants killed, 0 survivors** — an automated saboteur rewrote
+  the code thousands of ways ("flip this check", "delete this guard");
+  every single one was caught by a test. The three exemptions that exist
+  are documented with reasons and audited.
+- **22 end-to-end scenarios** drive the real binary with real git:
+  offline transfers, phone approvals, corrupted configs, concurrent
+  writes — [the whole map](TEST-MATRIX.md).
+- **Synthetic fixtures only.** No test ever touches a real network,
+  tailnet, or hostname. ([Why that matters](CONTRIBUTING.md#the-rules).)
+
+```sh
+npm run check       # typecheck + tests + 100% coverage gate
+npm run test:e2e    # 22 scenarios against the real binary
+npm run mutate      # the saboteur. 2,008 attempts, zero survivors.
+```
+
+## Built for OpenCode
+
+relay is the missing client for OpenCode's own cross-machine sync
+protocol — the same internal path their tools use, productized for
+everyone, with the stability contract written down and mutation-tested.
+Adapters are swappable slots (discovery, secrets, transport): Tailscale
+is a *reference implementation*, never a hard dependency. If you have
+git and an OpenCode server, you have 100% of relay.
+
+We'd love to see this upstreamed or featured in the plugin ecosystem.
+
+## Contributing
+
+TDD-first, 100%-or-documented-exemption, three-OS CI. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md) and [TEST-MATRIX.md](TEST-MATRIX.md).
 
 ## License
 

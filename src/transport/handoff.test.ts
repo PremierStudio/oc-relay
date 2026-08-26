@@ -11,7 +11,7 @@ const validEnvelope = {
   version: HANDOFF_VERSION,
   createdAt: "2026-08-26T12:00:00.000Z",
   sourceHost: "laptop",
-  repo: "github.com/itz4blitz/oc-relay",
+  repo: "github.com/example.test/oc-relay",
   branch: "opencode/sample-session",
   worktreeName: "sample-session",
   session: { id: "ses_123", title: "sample session" },
