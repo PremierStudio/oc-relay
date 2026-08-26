@@ -1,14 +1,14 @@
-# oc-relay — Final Vision
+# oc-relay: Final Vision
 
 > **The work follows you. You approve; relay does everything else.**
 
 A human interacts with relay through exactly two gestures:
 
-1. **Scan/tap** — a QR or push notification on the phone
-2. **Confirm** — biometric approve
+1. **Scan/tap:** a QR or push notification on the phone
+2. **Confirm:** biometric approve
 
-Everything else — commits, pushes, session serialization, environment
-provisioning, discovery, transport, trust — is relay's job.
+Everything else is relay's job: commits, pushes, session serialization,
+environment provisioning, discovery, transport, trust.
 
 ---
 
@@ -18,19 +18,19 @@ provisioning, discovery, transport, trust — is relay's job.
 |---|---|---|
 | Code | **git** (push/bundle) | Already the source of truth; relay never reinvents it |
 | Sessions | **OC2 sync protocol** (`POST /sync/history`, `/sync/replay` → `{sessionID}`, `/sync/steal`) | Anomaly's own internal cross-machine transfer path; relay is its missing client. Fallback: `opencode export/import` (accepts share URLs) |
-| Context/memory | **In-band handoff manifest** — structured JSON (summary · done/left · decisions · pointers) riding inside the payload, anchored as a file/ref in the target repo | Self-contained: zero external infra, works for every user |
+| Context/memory | **In-band handoff manifest:** structured JSON (summary · done/left · decisions · pointers) riding inside the payload, anchored as a file/ref in the target repo | Self-contained: zero external infra, works for every user |
 | Environment | **`.opencode/env.json` + `relay apply`** | Declarative convergence: any machine → same env |
 | Trust | **OC2 pair credentials + peer identity + phone biometrics** | Machines prove themselves; humans just approve |
 
 ## Dependency rule: core is minimal, adapters enhance
 
-**Hard requirements — the complete list:**
+**Hard requirements, the complete list:**
 - `git`
 - An OpenCode 2 server (its API ships with every install)
 
 That's it. Anyone with those two things gets 100% of relay's function.
 
-**Adapters — optional, auto-detected, never gating:**
+**Adapters are optional, auto-detected, never gating:**
 
 | Slot (interface) | Reference impl | Without it | Swap in your own |
 |---|---|---|---|
@@ -44,11 +44,11 @@ Same pattern as the env.json secret providers: the schema names the slot,
 runtime probes for the capability, falls back cleanly. An adapter being
 missing is a normal state, not an error.
 
-**Stronger rule — slots are swappable, not just optional.** Each slot above
+**Stronger rule: slots are swappable, not just optional.** Each slot above
 is an interface with (1) a reference implementation, (2) a zero-dependency
 fallback, and (3) an open contract for user-supplied implementations.
 Tailscale, Cloudflare, and OpenViking are first-party *examples* filling
-slots — never names checked by core. If a user can serve the slot's
+slots, never names checked by core. If a user can serve the slot's
 contract with something else, core cannot tell the difference.
 
 ## The topology
@@ -70,25 +70,25 @@ contract with something else, core cannot tell the difference.
                                              (SQLite + durable events)
 ```
 
-### Where the Durable Object slots in (recovered context)
+### Where the Durable Object slots in
 
-`@opencode-ai/sdk/workerd`: OpenCode v2 runs inside a DO — object SQLite is
+`@opencode-ai/sdk/workerd`: OpenCode v2 runs inside a DO. Object SQLite is
 the session store, durable events give eviction recovery, no local
 filesystem/processes required. That makes the DO three things for relay:
 
-1. **Rendezvous** — machines sleep; the DO never does. Handoff payloads queue
+1. **Rendezvous.** Machines sleep; the DO never does. Handoff payloads queue
    there and drain when the target wakes. Kills the "both boxes online at
    once" requirement.
-2. **Cloud twin** — a per-project OC2 living in the cloud. When every machine
+2. **Cloud twin.** A per-project OC2 living in the cloud. When every machine
    is shut, the session still runs; resume it from the phone browser.
-3. **Public door** — real TLS + Cloudflare Access means the phone can reach a
+3. **Public door.** Real TLS + Cloudflare Access means the phone can reach a
    session from any network, and "authorization" becomes a CF one-time PIN +
    biometric instead of raw pair creds in a URL.
 
 ## The flows
 
 *Flows below show the full-adapter configuration (your setup). Every
-adapter-less path degrades per the table above — e.g. no Tailscale means a
+adapter-less path degrades per the table above. No Tailscale means a
 pasted host:port instead of discovery; no 1Password means plain env vars.*
 
 ### Move work (machine → machine)
@@ -124,18 +124,22 @@ full environment, even with every machine powered off.
 | Phase | Deliverable | Gate |
 |---|---|---|
 | ✅ 0 | Manifest parser (types → validate → parse) | 100% cov · 100% mut |
-| ✅ 1 | `relay doctor` / `relay apply` — idempotent env convergence (secrets slot + plain impl, MCP drift engine, atomic config writes, hooks) | same gates · e2e smoke ✓ |
+| ✅ 1 | `relay doctor` / `relay apply`: idempotent env convergence (secrets slot + plain impl, MCP drift engine, atomic config writes, hooks) | same gates · e2e smoke ✓ |
 | ✅ 2 | Transport lib: sync-protocol client + export/import fallback + worktree create + **in-band handoff manifest** (`handoff.v1`) | same gates · real-git smoke ✓ |
-| ✅ 3 | `/handoff` command (`.opencode/command/`) + `relay` CLI (`send` / `receive` / `targets` / `doctor`) — E2E machine↔machine via bundle or direct push | demo ✓ |
-| ✅ 4 | Discovery: `relay ping --all` enumerates tailnet peers (Tailscale slot); `relay enroll NAME` builds fleet entries from discovered peers — **opt-in, never auto-probed** | demo ✓ |
+| ✅ 3 | `/handoff` command (`.opencode/command/`) + `relay` CLI (`send` / `receive` / `targets` / `doctor`): E2E machine↔machine via bundle or direct push | demo ✓ |
+| ✅ 4 | Discovery: `relay ping --all` enumerates tailnet peers (Tailscale slot); `relay enroll NAME` builds fleet entries from discovered peers, **opt-in and never auto-probed** | demo ✓ |
 | ✅ 5 | Authorization layer (`src/authz/`): request/approve/consume lifecycle, hashed single-use tokens, claim URLs + QR (qrencode when present), approval HTTP server, `relay authz` CLI + `serve-approvals`, locked/atomic multi-process store | demo ✓ |
-| Gate (all phases) | 100% line/branch/function coverage ✓ · mutation: full-src sweep 100% ✓ · E2E suite (`test/e2e/`) over the real binary — env convergence, offline WIP transfer, sync push, import fallback, discovery, authz lifecycle + concurrency, QR ✓ · manual checklist for real tailnet/phone (human-gated) |
+| Gate (all phases) | 100% line/branch/function coverage ✓ · mutation: full-src sweep 100% ✓ · E2E suite (`test/e2e/`) over the real binary: env convergence, offline WIP transfer, sync push, import fallback, discovery, authz lifecycle + concurrency, QR ✓ · manual checklist for real tailnet/phone (human-gated) |
 | 6 | Phone-first surfaces: push notifications, approval history views | demo |
 | 7 | DO anchor: rendezvous queue, cloud twin, CF Access door | demo |
 
 ## Upstream story
 
-We're not hacking around OpenCode — we're productizing the relay pattern
-Anomaly built internally and never exposed. Contribution pitch: *"here's the
-missing client for your own sync protocol, plus the stability contract you
-never wrote."* Target: featured on the OC plugins page.
+OpenCode already knows how to move a session between machines. The
+protocol ships with every install. What it never had was a client, the
+part a person actually runs. That's relay.
+
+We built it to work with OpenCode, not around it, and we tested it
+accordingly: every line covered, every mutant killed, the whole
+contract written down. The hope is to give it back. If relay one day
+earns a spot on the plugins page, that's the dream.
