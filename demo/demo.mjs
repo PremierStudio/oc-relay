@@ -178,10 +178,36 @@ function segment(title) {
   console.log(BAR);
 }
 
-function prompt(cwd, cmd) {
+/**
+ * Prompts type like a person: bursts of 1–3 chars, per-key jitter,
+ * longer hesitation at spaces, occasional think-pauses, and a beat
+ * before Enter. The recorder captures the real timing — the renderer
+ * just replays it. Typing rhythm is deliberately NOT scaled by
+ * DEMO_PACE (only pauses are); set DEMO_TYPE=0 to paste instead.
+ */
+const TYPE = process.env.DEMO_TYPE !== "0";
+async function prompt(cwd, cmd) {
   const here = cwd === repo ? "~/code/myapp" : cwd === receiver ? "~/srv/myapp" : "~";
   console.log("");
-  process.stdout.write(`${C.dim(`${here} $`)} ${C.green(cmd)}\n`);
+  process.stdout.write(`${C.dim(`${here} $`)} `);
+  if (!TYPE) {
+    process.stdout.write(`${C.green(cmd)}\n`);
+    return;
+  }
+  await sleep(180 + Math.random() * 170); // hands find the keyboard
+  for (let i = 0; i < cmd.length; ) {
+    const burst = 1 + Math.floor(Math.random() * 3);
+    const chunk = cmd.slice(i, i + burst);
+    i += burst;
+    process.stdout.write(C.green(chunk));
+    const last = chunk[chunk.length - 1];
+    let d = 24 + Math.random() * 36;
+    if (last === " ") d += 40 + Math.random() * 110;
+    if (Math.random() < 0.05) d += 130 + Math.random() * 170; // think
+    await sleep(d);
+  }
+  await sleep(160 + Math.random() * 150); // beat before Enter
+  process.stdout.write("\n");
 }
 
 function relay(args, { cwd = repo, env = {} } = {}) {
@@ -225,24 +251,24 @@ t0 = Date.now();
 
 // ── 1. your fleet is the computer ─────────────────────────────
 segment("1 · your fleet — every machine work can go to");
-prompt(repo, "relay targets");
+await prompt(repo, "relay targets");
 await relay(["targets"]);
 await pause(350);
 
 segment("2 · who's alive right now");
-prompt(repo, "relay ping");
+await prompt(repo, "relay ping");
 await relay(["ping"]);
 await pause(350);
 
 // ── 3. offload: move the session, free this machine ───────────
 segment("3 · offload — send it away AND let go here");
-prompt(repo, "relay send --target gpu-box --session ses_7f3 --steal");
+await prompt(repo, "relay send --target gpu-box --session ses_7f3 --steal");
 await relay(["send", "--target", "gpu-box", "--session", "ses_7f3", "--steal"]);
 await pause(400);
 
 // ── 4. offline: the bundle path ───────────────────────────────
 segment("4 · nas is asleep — the work still moves");
-prompt(repo, "relay send --target nas --context-file ctx.json --bundle-out ~/relay-demo/handoff.json");
+await prompt(repo, "relay send --target nas --context-file ctx.json --bundle-out ~/relay-demo/handoff.json");
 const offline = await relay([
   "send",
   "--target",
@@ -259,7 +285,7 @@ console.log(
 await pause(400);
 
 segment("   …carry it over by any means, then on the nas:");
-prompt(receiver, "relay receive --bundle handoff.json --into ~/code/myapp");
+await prompt(receiver, "relay receive --bundle handoff.json --into ~/code/myapp");
 await relay(["receive", "--bundle", join(SANDBOX, "handoff.json"), "--into", receiver], {
   cwd: receiver,
 });
@@ -272,7 +298,7 @@ await pause(350);
 
 // ── 5. approvals: the phone story ─────────────────────────────
 segment("5 · sensitive work needs a human yes");
-prompt(repo, "relay authz new --action deploy --label 'ship it' --ttl 120 --host 127.0.0.1 --port 49499");
+await prompt(repo, "relay authz new --action deploy --label 'ship it' --ttl 120 --host 127.0.0.1 --port 49499");
 const minted = await relay([
   "authz",
   "new",
@@ -291,7 +317,7 @@ const token = /token \(shown once, never stored\): (\S+)/.exec(minted.out)?.[1] 
 const id = /request:\s+(\S+)/.exec(minted.out)?.[1] ?? "";
 await pause(300);
 
-prompt(repo, "relay serve-approvals --port 49499 &   # phone taps the claim URL…");
+await prompt(repo, "relay serve-approvals --port 49499 &   # phone taps the claim URL…");
 const approvals = spawn(process.execPath, [RELAY, "serve-approvals", "--port", "49499"], {
   env: { ...baseEnv },
   stdio: ["ignore", "ignore", "ignore"],
@@ -302,17 +328,17 @@ console.log(`  ${C.yellow("phone →")} ${await phone.text()}`);
 approvals.kill("SIGTERM");
 await new Promise((r) => approvals.on("exit", r));
 
-prompt(repo, "relay authz list");
+await prompt(repo, "relay authz list");
 await relay(["authz", "list"]);
 await pause(350);
 
 // ── 6. environment convergence ────────────────────────────────
 segment("6 · any machine converges to the declared env");
-prompt(repo, "relay doctor");
+await prompt(repo, "relay doctor");
 await relay(["doctor"], { cwd: repo });
-prompt(repo, "relay apply");
+await prompt(repo, "relay apply");
 await relay(["apply"], { cwd: repo });
-prompt(repo, "relay doctor");
+await prompt(repo, "relay doctor");
 await relay(["doctor"], { cwd: repo });
 await pause(300);
 

@@ -1,22 +1,30 @@
 #!/usr/bin/env node
 /**
- * Renders the REAL PTY recording (from `script --log-timing`) into an MP4,
- * the way a screen recorder would — same player as render-gif.mjs, h264 sink:
+ * Renders the REAL PTY recording (from `script --log-timing`) into an MP4
+ * that looks like a genuine terminal window, the way a screen recorder
+ * would — same player philosophy as render-gif.mjs, h264 sink:
  *
  *   1. replay the raw byte stream through @xterm/headless — the same
  *      terminal engine VS Code uses — honoring the recorded timestamps
  *   2. snapshot the screen every 50ms whenever bytes arrived
- *   3. rasterize each snapshot with node-canvas at 2x for phone-legible text
+ *   3. rasterize each snapshot with node-canvas at 2x for phone-legible
+ *      text, inside a window frame (title bar + traffic lights) with a
+ *      blinking cursor — a real terminal, not a floating text dump
  *   4. stream frames into ffmpeg (libx264, yuv420p, +faststart) as they
  *      are produced — a long tour never buffers in RAM
  *
- * No frame content is authored here; this is a player, not an animator.
- * Long pauses are capped (default 900ms) so the video keeps moving, the
- * final frame is held, and the stream is windowed to the session itself:
- * script's own banners never reach the encoder.
+ * Two correctness details that matter for glyphs:
+ *   - chunks are BYTE ranges: a multi-byte UTF-8 char (─ ● █ …) split
+ *     across a chunk boundary must not be decoded twice. We decode with
+ *     a streaming TextDecoder so partial sequences carry across chunks
+ *     (naive per-chunk toString() yields U+FFFD tofu — 89 of them in a
+ *     typical tour recording, all of them inside the QR art).
+ *   - the font is pinned to a single family (JetBrainsMono Nerd Font)
+ *     with full box-drawing/geometry coverage, so no glyph ever falls
+ *     through to a mismatched fallback face.
  *
  *   node demo/render-mp4.mjs demo/hero.timing demo/hero.typescript demo/hero.mp4
- *   node demo/render-mp4.mjs demo/tour.timing demo/tour.typescript demo/demo.mp4 900 3000 $'\x1b[1m  oc-relay'
+ *   node demo/render-mp4.mjs demo/tour.timing demo/tour.typescript demo/demo.mp4 2400 3200 $'\x1b[1m  oc-relay' "zsh — relay tour"
  */
 import { readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -25,15 +33,16 @@ import { createCanvas } from "canvas";
 
 const { Terminal } = headless;
 
-const [timingPath, logPath, outPath, gapArg, holdArg, markerArg] = process.argv.slice(2);
+const [timingPath, logPath, outPath, gapArg, holdArg, markerArg, titleArg] = process.argv.slice(2);
 if (timingPath === undefined || logPath === undefined || outPath === undefined) {
   console.error(
-    "usage: node demo/render-mp4.mjs <timing> <typescript> <out.mp4> [maxGapMs=900] [holdMs=3000] [startMarker]",
+    "usage: node demo/render-mp4.mjs <timing> <typescript> <out.mp4> [maxGapMs=900] [holdMs=3000] [startMarker] [windowTitle]",
   );
   process.exit(2);
 }
 const MAX_GAP = Number(gapArg ?? 900);
 const HOLD_MS = Number(holdArg ?? 3000);
+const TITLE = titleArg ?? "zsh — ~/code/myapp";
 
 // 2x the GIF geometry — same 100x26 grid, glyphs a phone can read
 const COLS = 100;
@@ -42,8 +51,10 @@ const FS = 30; // font size px
 const PAD = 36;
 const CW = Math.round(FS * 0.601); // monospace advance
 const LH = Math.round(FS * 1.38);
+const FONT = `"JetBrainsMono Nerd Font"`; // single family — full ─●○✓█ coverage, no fallback roulette
 const W = PAD * 2 + COLS * CW;
-const H = PAD * 2 + ROWS * LH;
+const TITLE_H = 88;
+const H = TITLE_H + PAD * 2 + ROWS * LH;
 const FRAME_MS = 50;
 
 // ---------- replay ----------
@@ -74,6 +85,11 @@ const WIN_END = (() => {
 })();
 
 const term = new Terminal({ cols: COLS, rows: ROWS, scrollback: 0 });
+
+// Streaming decode: chunk boundaries can split UTF-8 sequences, and the
+// timing log records bytes — never decode a chunk in isolation.
+const decoder = new TextDecoder("utf-8", { fatal: false });
+const decode = (bytes) => decoder.decode(bytes, { stream: true });
 
 // xterm 256-color table for palette indices > 15
 const LEVEL = [0, 95, 135, 175, 215, 255];
@@ -108,19 +124,58 @@ function fgOf(cell) {
 // ---------- rasterizer ----------
 const canvas = createCanvas(W, H);
 const ctx = canvas.getContext("2d");
-ctx.font = `${FS}px "Noto Sans Mono", "DejaVu Sans Mono", monospace`;
 ctx.textBaseline = "middle";
 
+function roundRectPath(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+let simMs = 0; // simulated wall clock: advances once per emitted frame
 function drawFrame() {
+  // window chrome
+  ctx.clearRect(0, 0, W, H);
+  roundRectPath(1.5, 1.5, W - 3, H - 3, 26);
   ctx.fillStyle = "#0b0e14";
-  ctx.fillRect(0, 0, W, H);
+  ctx.fill();
+  ctx.fillStyle = "#11151c"; // title bar
+  ctx.save();
+  roundRectPath(1.5, 1.5, W - 3, H - 3, 26);
+  ctx.clip();
+  ctx.fillRect(0, 0, W, TITLE_H);
+  ctx.fillStyle = "#1a2029";
+  ctx.fillRect(0, TITLE_H - 2, W, 2);
+  ctx.restore();
+  roundRectPath(1.5, 1.5, W - 3, H - 3, 26);
+  ctx.strokeStyle = "#232b38";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  for (const [i, color] of ["#ff5f56", "#febc2e", "#28c840"].entries()) {
+    ctx.beginPath();
+    ctx.arc(56 + i * 46, TITLE_H / 2, 12, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  ctx.font = `500 26px ${FONT}`;
+  ctx.fillStyle = "#7b8494";
+  ctx.textAlign = "center";
+  ctx.fillText(TITLE, W / 2, TITLE_H / 2 + 1);
+  ctx.textAlign = "left";
+
+  // screen
+  ctx.font = `${FS}px ${FONT}`;
   const buf = term.buffer.active;
   const base = buf.baseY;
   for (let row = 0; row < ROWS; row++) {
     const line = buf.getLine(base + row);
     if (line === undefined) continue;
     let x = PAD;
-    let y = PAD + row * LH + LH / 2;
+    let y = TITLE_H + PAD + row * LH + LH / 2;
     for (let col = 0; col < COLS; col++) {
       const cell = line.getCell(col);
       if (cell === undefined) break;
@@ -128,9 +183,9 @@ function drawFrame() {
       if (ch !== " ") {
         ctx.fillStyle = cell.isInverse() ? "#0b0e14" : fgOf(cell);
         if (cell.isBold()) {
-          ctx.font = `bold ${FS}px "Noto Sans Mono", "DejaVu Sans Mono", monospace`;
+          ctx.font = `bold ${FS}px ${FONT}`;
           ctx.fillText(ch, x, y);
-          ctx.font = `${FS}px "Noto Sans Mono", "DejaVu Sans Mono", monospace`;
+          ctx.font = `${FS}px ${FONT}`;
         } else {
           ctx.fillText(ch, x, y);
         }
@@ -138,11 +193,14 @@ function drawFrame() {
       x += CW;
     }
   }
-  // cursor block at the live position
-  const cx = term.buffer.active.cursorX;
-  const cy = term.buffer.active.cursorY;
-  ctx.fillStyle = "rgba(152, 195, 121, 0.85)";
-  ctx.fillRect(PAD + cx * CW, PAD + cy * LH, CW, LH);
+  // blinking cursor block — real terminals blink, even mid-typing
+  if (simMs % 1100 < 600) {
+    const cx = term.buffer.active.cursorX;
+    const cy = term.buffer.active.cursorY;
+    ctx.fillStyle = "rgba(152, 195, 121, 0.85)";
+    ctx.fillRect(PAD + cx * CW, TITLE_H + PAD + cy * LH, CW, LH);
+  }
+  simMs += FRAME_MS;
   return ctx.getImageData(0, 0, W, H).data; // RGBA
 }
 
@@ -197,7 +255,7 @@ async function main() {
       lastEmit += FRAME_MS;
       idle += FRAME_MS;
     }
-    await feed(log.subarray(from, to).toString("utf8"));
+    await feed(decode(log.subarray(from, to)));
     if (clock - lastEmit >= FRAME_MS) {
       await write(drawFrame());
       sent++;
@@ -205,15 +263,31 @@ async function main() {
     }
   }
   await feed(""); // drain any tail parsing before the final snapshot
-  await write(drawFrame()); // final state + hold
-  sent++;
-  const last = drawFrame();
-  for (let h = FRAME_MS; h < HOLD_MS; h += FRAME_MS) {
-    await write(last);
+  // A recording can end mid-UTF-8 (the PTY truncates where `script`
+  // appends its trailer). Flushing that partial yields exactly one
+  // U+FFFD — drop the tail instead of putting tofu on screen.
+  const tail = decoder.decode();
+  if (tail !== "" && !tail.includes("\uFFFD")) await feed(tail);
+
+  // glyph sanity: a replacement char on screen means something upstream
+  // re-introduced byte-level decoding. Fail loudly rather than ship tofu.
+  let tofu = 0;
+  for (let row = 0; row < ROWS; row++) {
+    const line = term.buffer.active.getLine(term.buffer.active.baseY + row);
+    if (line === undefined) continue;
+    for (let col = 0; col < COLS; col++) {
+      const ch = line.getCell(col)?.getChars();
+      if (ch === "\uFFFD") tofu++;
+    }
+  }
+  if (tofu > 0) throw new Error(`${tofu} U+FFFD replacement chars on screen — refusing to render tofu`);
+
+  for (let h = 0; h < HOLD_MS; h += FRAME_MS) {
+    await write(drawFrame()); // keep blinking through the end hold
     sent++;
   }
   ff.stdin.end();
-  console.log(`replayed ${timing.length} chunks → ${sent} frames @ ${W}x${H} → ${outPath}`);
+  console.log(`replayed ${timing.length} chunks → ${sent} frames @ ${W}x${H} → ${outPath} (0 tofu)`);
 }
 
 main().catch((e) => {

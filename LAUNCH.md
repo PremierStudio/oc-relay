@@ -166,12 +166,17 @@ Body:
       + release.yml exist; needs the NPM_TOKEN secret if not set)
 - [ ] On a clean machine/vm: `npm install -g oc-relay && relay --help`
       — verify it actually runs (node >= 20)
-- [x] Demo video rendered — `demo/demo.mp4` (36s full tour, for X/HN/
-      Reddit) and `demo/hero.mp4` (7s offload loop, ideal timeline
-      autoplay). Both 1872×1138 h264, phone-legible, ~1MB. Re-render
-      after any demo change: record with `script --log-timing ... -c
-      '... DEMO_PACE=14 node demo/demo.mjs'`, then
-      `node demo/render-mp4.mjs <timing> <typescript> <out.mp4>`
+- [x] Demo video rendered — `demo/demo.mp4` (37s full tour, typed
+      commands, for X/HN/Reddit) and `demo/hero.mp4` (7s offload loop,
+      ideal timeline autoplay). Both 1872×1226 h264 with terminal window
+      chrome, phone-legible, ~1.7MB. Re-render after any demo change:
+      record with `script -q --log-timing demo/tour.timing -c 'stty
+      cols 100 rows 26; TERM=xterm-256color DEMO_PACE=4 node
+      demo/demo.mjs' demo/tour.typescript`, then `node demo/render-mp4.mjs
+      demo/tour.timing demo/tour.typescript demo/demo.mp4 2400 3200
+      $'\x1b[1m  oc-relay' "zsh — relay tour"`. Commands are typed
+      human-style by default (`DEMO_TYPE=0` to paste); the renderer
+      fails the build if a single tofu glyph reaches the screen
 - [ ] Have answers ready for the two guaranteed objections:
       1. "it scans my network?" → strictly opt-in, `--all` only, privacy
          is the default

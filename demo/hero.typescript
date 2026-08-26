@@ -1,0 +1,21 @@
+Script started on 2026-08-26 13:28:27-04:00 [COMMAND="stty cols 100 rows 26 2>/dev/null; TERM=xterm-256color node demo/hero-tty.mjs" <not executed on terminal>]
+
+  [36moc-relay[0m[2m  ·  real binary  ·  loopback fleet[0m
+
+[2m~/code/myapp $ [0mrelay targets
+gpu-box	http://127.0.0.1:33035	~/srv/myapp
+nas	http://127.0.0.1:9	~/code/myapp
+[2m~/code/myapp $ [0mrelay ping
+● fleet      gpu-box              http://127.0.0.1:33035 (14ms)
+○ fleet      nas                  http://127.0.0.1:9 (1ms)
+[2m~/code/myapp $ [0mrelay send --target gpu-box --session ses_7f3 --steal
+pushed via sync-replay → gpu-box
+target session: ses_9c2
+events: 1
+detached here: session ses_7f3 now lives on gpu-box
+
+[2m  npm install -g oc-relay[0m
+
+recorded 94 chunks to demo/hero.session.jsonl
+
+Script done on 2026-08-26 13:28:31-04:00 [COMMAND_EXIT_CODE="0"]
