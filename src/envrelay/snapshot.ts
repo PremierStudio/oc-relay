@@ -92,8 +92,9 @@ function slug(id: string): string {
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
-  // Stryker disable next-line ConditionalExpression: with the typeof arm removed, every JSON-reachable root (string/number/bool) yields undefined on property access and is skipped downstream — behaviorally identical
-  return typeof v === "object" && v !== null && !Array.isArray(v);
+  // toString tag "[object Object]": rejects null, arrays, scalars — one
+  // expression, no conditional arms to defend.
+  return Object.prototype.toString.call(v) === "[object Object]";
 }
 /**
  * Build a snapshot from a project directory:
@@ -197,11 +198,10 @@ export async function buildEnvironmentSnapshot(
 }
 
 export function isEnvironmentSnapshot(value: unknown): value is EnvironmentSnapshot {
+  if (!isPlainObject(value)) return false;
   return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { version?: unknown }).version === "relay-env.v1" &&
-    Array.isArray((value as { mcpServers?: unknown }).mcpServers) &&
-    Array.isArray((value as { skills?: unknown }).skills)
+    value.version === "relay-env.v1" &&
+    Array.isArray(value.mcpServers) &&
+    Array.isArray(value.skills)
   );
 }

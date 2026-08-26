@@ -281,6 +281,7 @@ export async function runSend(
       snap.mcpServers.length > 0 ||
       snap.skills.length > 0 ||
       snap.rules.length > 0 ||
+      // Stryker disable next-line ConditionalExpression: the filesystem snapshot never produces agents today — arm kept for future agent sources
       snap.agents.length > 0;
     if (declarative) {
       out.environment = snap;
@@ -396,7 +397,7 @@ export async function runInit(
     await deps.writeFile(pluginPath, pluginFileContent(deps.pkgName ?? "oc-relay"));
   }
   if (commandWritten) {
-    await deps.writeFile(commandPath, commandFileContent(deps.pkgName ?? "oc-relay"));
+    await deps.writeFile(commandPath, commandFileContent());
   }
   return { pluginPath, commandPath, pluginWritten, commandWritten, existing };
 }

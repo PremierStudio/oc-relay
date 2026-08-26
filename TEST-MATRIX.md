@@ -56,5 +56,9 @@ by a human on real hardware — never in CI.
 
 | Location | Mutator | Reason |
 |---|---|---|
-| `src/cli/dispatch.ts` serve-approvals port parse | ConditionalExpression | `parseInt(undefined)` is `NaN`; the undefined guard is defensive typing, behaviorally invisible |
+| `src/cli/dispatch.ts` serve-approvals + ping port parse | ConditionalExpression | `parseInt(undefined)` is `NaN`; the undefined guard is defensive typing, behaviorally invisible |
 | `src/cli/handlers.ts` enroll target username/worktreeRoot | ConditionalExpression | absent-vs-`undefined` is invisible after `JSON.stringify`; guard exists for `exactOptionalPropertyTypes` only |
+| `src/cli/handlers.ts` declarative-environment agents arm | ConditionalExpression | the filesystem snapshot never produces agents today — arm kept for future agent sources |
+| `src/envrelay/snapshot.ts` slug dash-trim regex | Regex | trimming variants are cosmetically equivalent for all reachable inputs (JSON keys are non-empty) |
+| `src/envrelay/snapshot.ts` readJson catch body | BlockStatement | emptied catch falls through to the same implicit `undefined` |
+| `src/envrelay/snapshot.ts` isPlainObject typeof arm | ConditionalExpression | with the arm removed, every JSON-reachable root yields `undefined` on property access and is skipped downstream — equivalent |

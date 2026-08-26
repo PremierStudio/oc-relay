@@ -847,23 +847,60 @@ describe("runInit (OpenCode UI install)", () => {
     expect(r.commandPath).toBe("/proj/.opencode/command/relay.md");
   });
 
-  it("keeps existing files and lists them", async () => {
+  it("keeps existing files and lists them without writing", async () => {
+    const written: string[] = [];
     const r = await runInit(
-      mk({
-        "/proj/.opencode/plugin/relay.ts": true,
-        "/proj/.opencode/command/relay.md": true,
-      }),
+      {
+        repoDir: "/proj",
+        exists: async (p) =>
+          p === "/proj/.opencode/plugin/relay.ts" || p === "/proj/.opencode/command/relay.md",
+        writeFile: async (p) => {
+          written.push(p);
+        },
+        pkgName: "oc-relay",
+      },
       {},
     );
     expect(r.pluginWritten).toBe(false);
     expect(r.commandWritten).toBe(false);
     expect(r.existing).toHaveLength(2);
+    expect(written).toEqual([]);
   });
 
   it("--force overwrites even when present", async () => {
-    const r = await runInit(mk({ "/proj/.opencode/plugin/relay.ts": true }), { force: true });
+    const written: string[] = [];
+    const r = await runInit(
+      {
+        repoDir: "/proj",
+        exists: async () => true,
+        writeFile: async (p) => {
+          written.push(p);
+        },
+        pkgName: "oc-relay",
+      },
+      { force: true },
+    );
     expect(r.pluginWritten).toBe(true);
     expect(r.commandWritten).toBe(true);
+    expect(written).toEqual([
+      "/proj/.opencode/plugin/relay.ts",
+      "/proj/.opencode/command/relay.md",
+    ]);
+  });
+
+  it("defaults the documented package name when pkgName is absent", async () => {
+    const written: Record<string, string> = {};
+    await runInit(
+      {
+        repoDir: "/p",
+        exists: async () => false,
+        writeFile: async (p, c) => {
+          written[p] = c;
+        },
+      },
+      {},
+    );
+    expect(written["/p/.opencode/plugin/relay.ts"]).toContain("pkg: oc-relay");
   });
 
   it("generated plugin registers both tools and the command drives the CLI", async () => {

@@ -62,7 +62,7 @@ export default relayTools;
 `;
 }
 
-export function commandFileContent(_pkgName: string): string {
+export function commandFileContent(): string {
   return `---
 description: Send this session + work to another machine (oc-relay)
 allowed-tools: Bash(relay:*), Read, Ask

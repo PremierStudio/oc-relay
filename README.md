@@ -30,6 +30,27 @@ timing, loopback stand-ins for the sync endpoints only. Replay it
 yourself: `git clone && npm install && npm run demo` (full tour) or
 `npm run demo:record` (re-records and re-renders this GIF).
 
+## Use it inside OpenCode (the GUI)
+
+```sh
+cd your-project && relay init    # writes .opencode/plugin/relay.ts + /relay command
+```
+
+Restart OpenCode, then just tell it what you want:
+
+> send this session to gpu-box
+
+The agent calls `relay_targets` to see your fleet, distills the session
+into structured context, and `relay_send` moves it. On the receiving
+machine the worktree, session, and agent environment land together:
+new in the handoff, your **agent environment** travels too — MCP
+servers (secrets redacted to `${VAR}` references with a `requiredEnv`
+list), skills, and rules are snapshotted on send and applied on the
+target through `@premierstudio/ai-tools` when installed there
+(`.opencode/relay-environment.json` is always written as the
+reviewable source of truth). Hooks are functions, not data — they live
+in committed config and travel with git.
+
 ## Three ways people use it
 
 **1. Offload — free up the machine you're on.**
