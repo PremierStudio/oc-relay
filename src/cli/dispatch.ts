@@ -37,6 +37,12 @@ export type CliCommand =
       ttl?: number;
       id?: string;
       token?: string;
+      /** Host advertised in the claim URL (defaults to this machine's name). */
+      host?: string;
+      /** Port advertised in the claim URL (omitted when it matches the default). */
+      port?: number;
+      /** Advertise https (e.g. behind `tailscale serve`). */
+      https?: boolean;
     }
   | { command: "serve-approvals"; port?: number; host?: string };
 
@@ -60,6 +66,7 @@ export const CLI_USAGE = `usage:
   relay enroll --name NAME [--base-url URL] [--username U] [--password-env VAR]
                [--repo-dir DIR] [--worktree-root DIR] [--https]
   relay authz new --action ACTION [--label TEXT] [--ttl SECONDS]
+                  [--host HOST] [--port N] [--https]   # advertised claim-url bits
   relay authz list
   relay authz approve --id ID --token TOKEN
   relay serve-approvals [--port N] [--host ADDR]
@@ -125,6 +132,13 @@ export function parseCli(argv: string[]): ParsedCli | CliUsageError {
       if (label !== undefined) {
         command.label = label;
       }
+      const host = requireFlag(azFlags, "host");
+      if (host !== undefined) command.host = host;
+      const portRaw = requireFlag(azFlags, "port");
+      // Stryker disable next-line ConditionalExpression: parseInt(undefined) is NaN, so the guard is defensively redundant and behaviorally invisible
+      const port = portRaw === undefined ? NaN : Number.parseInt(portRaw, 10);
+      if (!Number.isNaN(port)) command.port = port;
+      if (azFlags["https"] === true) command.https = true;
       const ttlRaw = requireFlag(azFlags, "ttl");
       if (ttlRaw !== undefined) {
         const ttl = Number.parseInt(ttlRaw, 10);

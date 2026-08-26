@@ -191,7 +191,13 @@ async function main() {
 
       if (cmd.sub === "new") {
         const report = await runAuthzNew(
-          { store: authzStore, crypto, hostname: hostname() },
+          {
+            store: authzStore,
+            crypto,
+            hostname: cmd.host ?? hostname(),
+            ...(cmd.port === undefined ? {} : { port: cmd.port }),
+            ...(cmd.https === undefined ? {} : { https: cmd.https }),
+          },
           { action: cmd.action ?? "", ...(cmd.label === undefined ? {} : { label: cmd.label }), ...(cmd.ttl === undefined ? {} : { ttlSeconds: cmd.ttl }) },
         );
         console.log(`request:    ${report.id}`);

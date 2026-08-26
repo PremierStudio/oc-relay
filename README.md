@@ -21,6 +21,14 @@ offline right now.
 
 ---
 
+<p align="center">
+  <a href="assets/demo.svg" target="_blank"><img src="assets/demo.svg" width="720" alt="oc-relay guided tour: fleet listing, ping, offloading a session with --steal, offline bundle transfer, phone approval with QR, environment convergence"></a>
+</p>
+
+**The full tour in one command** — real binary, synthetic fleet, loopback
+only: `git clone && npm install && npm run demo`. Every line above is
+live output from the actual tool.
+
 ## Three ways people use it
 
 **1. Offload — free up the machine you're on.**

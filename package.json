@@ -47,6 +47,7 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run coverage",
+    "demo": "node demo/demo.mjs",
     "test:e2e": "npm run build && node --test \"test/e2e/*.test.mjs\"",
     "build": "tsup src/index.ts --format esm --dts --clean",
     "mutate": "stryker run"

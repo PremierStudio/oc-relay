@@ -159,6 +159,29 @@ describe("parseCli", () => {
       ok: true,
       command: { command: "authz", sub: "list" },
     });
+    expect(
+      parseCli([
+        "authz",
+        "new",
+        "--action",
+        "send",
+        "--host",
+        "box.tailnet-example.ts.net",
+        "--port",
+        "49400",
+        "--https",
+      ]),
+    ).toStrictEqual({
+      ok: true,
+      command: {
+        command: "authz",
+        sub: "new",
+        action: "send",
+        host: "box.tailnet-example.ts.net",
+        port: 49400,
+        https: true,
+      },
+    });
     expect(parseCli(["authz", "approve", "--id", "r1", "--token", "t"])).toStrictEqual({
       ok: true,
       command: { command: "authz", sub: "approve", id: "r1", token: "t" },
