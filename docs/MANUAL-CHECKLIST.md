@@ -23,7 +23,9 @@ first. Record evidence per run; a scenario that cannot be tested is a
 - After the run: stop `serve-approvals`, delete scratch fleet entries,
   worktrees, and repos; revoke any test tokens.
 
-## 1. Installed artifact (PKG-02)
+## 1. Installed artifact (PKG-03)
+
+> Automated by `test/e2e/pkg-install.test.mjs` (PKG-02). Spot-check on real hardware:
 
 - [ ] `npm pack` → install the tarball into an empty dir; `require`/`import`
       of `oc-relay` resolves and exposes the documented exports.

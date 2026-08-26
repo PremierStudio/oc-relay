@@ -42,7 +42,8 @@ by a human on real hardware — never in CI.
 | AUTHZ-03 | unit | `src/authz/store.test.ts`, `node.test.ts` | purge window boundaries, commit routing, serialization, lock breaking/defaults/contention |
 | AUTHZ-03 | **e2e** | `test/e2e/wip-import-authz.test.mjs` | ten parallel CLI mints all persist through the locked file store |
 | QR-01 | e2e | `test/e2e/wip-import-authz.test.mjs` | qrencode renders claim art; clean degradation without it |
-| PKG-01 | e2e | `test/e2e/disc-pkg.test.mjs` | `dist/index.js` exposes every documented runtime export || PKG-02 | manual | checklist §1 | installed tarball, `.bin/relay`, packaged command asset |
+| PKG-01 | e2e | `test/e2e/disc-pkg.test.mjs` | `dist/index.js` exposes every documented runtime export || PKG-02 | e2e | `test/e2e/pkg-install.test.mjs` | `npm pack` → clean consumer install → API import → `.bin/relay` usage exit 2 |
+| PKG-03 | manual | checklist §1 | installed tarball on real hardware (spot-check) |
 | FLEET-01 | unit | `src/cli/config.test.ts` | fleet parsing, env expansion, credential resolution |
 | CLI-01 | unit | `src/cli/dispatch.test.ts` | argv parsing for every verb, exact shapes |
 | CLI-02 | e2e | `test/e2e/cli-surface.test.mjs` + all e2e files | exit codes and stdout contracts: usage (2), unknown verb (2), missing flags (2), invalid manifest JSON (1, no stack), corrupt fleet JSON (2, no stack) |
