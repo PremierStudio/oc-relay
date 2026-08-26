@@ -22,7 +22,11 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run coverage
+      # The e2e harness drives POSIX shell fake-binaries (opencode/tailscale/
+      # qrencode stubs); run it on the POSIX legs. Windows cross-platform
+      # correctness is gated by typecheck + the full unit/coverage suite.
       - run: npm run test:e2e
+        if: runner.os != 'Windows'
 
   mutation:
     needs: test
