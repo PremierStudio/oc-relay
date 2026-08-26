@@ -172,6 +172,9 @@ const baseEnv = {
 
 // ---------- presentation ----------
 function segment(title) {
+  // Fresh screen per segment — a tour that scrolls lines off while
+  // you read them feels bad on video; each beat gets a clean slate.
+  process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
   console.log("");
   console.log(BAR);
   console.log(C.bold(C.cyan(`  ${title}`)));
@@ -179,11 +182,13 @@ function segment(title) {
 }
 
 /**
- * Prompts type like a person: bursts of 1–3 chars, per-key jitter,
- * longer hesitation at spaces, occasional think-pauses, and a beat
- * before Enter. The recorder captures the real timing — the renderer
- * just replays it. Typing rhythm is deliberately NOT scaled by
- * DEMO_PACE (only pauses are); set DEMO_TYPE=0 to paste instead.
+ * Prompts type like a person: ONE character per write (never a burst —
+ * multi-char pops read as machine-gun), 60–120ms base cadence, longer
+ * hesitation at spaces, occasional think-pauses and quick double-
+ * strikes so the rhythm isn't metronomic, and a beat before Enter.
+ * The recorder captures the real timing — the renderer just replays
+ * it. Typing rhythm is deliberately NOT scaled by DEMO_PACE (only
+ * pauses are); set DEMO_TYPE=0 to paste instead.
  */
 const TYPE = process.env.DEMO_TYPE !== "0";
 async function prompt(cwd, cmd) {
@@ -194,19 +199,17 @@ async function prompt(cwd, cmd) {
     process.stdout.write(`${C.green(cmd)}\n`);
     return;
   }
-  await sleep(180 + Math.random() * 170); // hands find the keyboard
-  for (let i = 0; i < cmd.length; ) {
-    const burst = 1 + Math.floor(Math.random() * 3);
-    const chunk = cmd.slice(i, i + burst);
-    i += burst;
-    process.stdout.write(C.green(chunk));
-    const last = chunk[chunk.length - 1];
-    let d = 24 + Math.random() * 36;
-    if (last === " ") d += 40 + Math.random() * 110;
-    if (Math.random() < 0.05) d += 130 + Math.random() * 170; // think
+  await sleep(260 + Math.random() * 240); // hands find the keyboard
+  for (const ch of cmd) {
+    process.stdout.write(C.green(ch));
+    let d = 60 + Math.random() * 60;
+    if (ch === " ") d += 50 + Math.random() * 130;
+    const r = Math.random();
+    if (r < 0.06) d += 160 + Math.random() * 220; // think
+    else if (r < 0.18) d = 32 + Math.random() * 18; // quick double-strike
     await sleep(d);
   }
-  await sleep(160 + Math.random() * 150); // beat before Enter
+  await sleep(210 + Math.random() * 190); // beat before Enter
   process.stdout.write("\n");
 }
 

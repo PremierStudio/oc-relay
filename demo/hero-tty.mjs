@@ -109,10 +109,15 @@ w("\n");
 
 async function prompt(cmd) {
   w(C.dim("~/code/myapp $ "));
+  await sleep(240 + Math.random() * 200); // hands find the keyboard
   for (const ch of cmd) {
-    w(ch);
-    await sleep(18 + Math.random() * 26);
+    w(ch); // one char per write — multi-char pops read as machine-gun
+    let d = 60 + Math.random() * 60;
+    if (ch === " ") d += 50 + Math.random() * 110;
+    if (Math.random() < 0.06) d += 150 + Math.random() * 190; // think
+    await sleep(d);
   }
+  await sleep(200 + Math.random() * 180); // beat before Enter
   w("\n");
 }
 

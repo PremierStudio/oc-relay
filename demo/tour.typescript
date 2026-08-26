@@ -1,113 +1,36 @@
-Script started on 2026-08-26 13:26:15-04:00 [COMMAND="stty cols 100 rows 26 2>/dev/null; TERM=xterm-256color DEMO_PACE=4 node demo/demo.mjs" <not executed on terminal>]
+Script started on 2026-08-26 13:36:45-04:00 [COMMAND="stty cols 100 rows 26 2>/dev/null; TERM=xterm-256color DEMO_PACE=2 node demo/demo.mjs" <not executed on terminal>]
 [1;1H[0J
 [1m  oc-relay — the guided tour[0m
 [2m  real binary · synthetic fleet · loopback only[0m
-
+[2J[3J[H
 [2m──────────────────────────────────────────────────────────────────[0m
 [1m[36m  1 · your fleet — every machine work can go to[0m[0m
 [2m──────────────────────────────────────────────────────────────────[0m
 
-[2m~/code/myapp $[0m [32mre[0m[32ml[0m[32ma[0m[32my [0m[32mtar[0m[32mge[0m[32mt[0m[32ms[0m
-gpu-box	http://127.0.0.1:34631	~/srv/myapp
+[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32mt[0m[32ma[0m[32mr[0m[32mg[0m[32me[0m[32mt[0m[32ms[0m
+gpu-box	http://127.0.0.1:41423	~/srv/myapp
 nas	http://127.0.0.1:9	~/code/myapp
-
+[2J[3J[H
 [2m──────────────────────────────────────────────────────────────────[0m
 [1m[36m  2 · who's alive right now[0m[0m
 [2m──────────────────────────────────────────────────────────────────[0m
 
-[2m~/code/myapp $[0m [32mr[0m[32mela[0m[32my[0m[32m pi[0m[32mng[0m
-● fleet      gpu-box              http://127.0.0.1:34631 (13ms)
+[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32mp[0m[32mi[0m[32mn[0m[32mg[0m
+● fleet      gpu-box              http://127.0.0.1:41423 (15ms)
 ○ fleet      nas                  http://127.0.0.1:9 (0ms)
-
+[2J[3J[H
 [2m──────────────────────────────────────────────────────────────────[0m
 [1m[36m  3 · offload — send it away AND let go here[0m[0m
 [2m──────────────────────────────────────────────────────────────────[0m
 
-[2m~/code/myapp $[0m [32mrel[0m[32ma[0m[32my [0m[32ms[0m[32men[0m[32md[0m[32m [0m[32m-[0m[32m-t[0m[32mar[0m[32mge[0m[32mt [0m[32mgp[0m[32mu[0m[32m-[0m[32mbox[0m[32m --[0m[32ms[0m[32mess[0m[32mion[0m[32m s[0m[32mes[0m[32m_7[0m[32mf3 [0m[32m-[0m[32m-st[0m[32mea[0m[32ml[0m
+[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32ms[0m[32me[0m[32mn[0m[32md[0m[32m [0m[32m-[0m[32m-[0m[32mt[0m[32ma[0m[32mr[0m[32mg[0m[32me[0m[32mt[0m[32m [0m[32mg[0m[32mp[0m[32mu[0m[32m-[0m[32mb[0m[32mo[0m[32mx[0m[32m [0m[32m-[0m[32m-[0m[32ms[0m[32me[0m[32ms[0m[32ms[0m[32mi[0m[32mo[0m[32mn[0m[32m [0m[32ms[0m[32me[0m[32ms[0m[32m_[0m[32m7[0m[32mf[0m[32m3[0m[32m [0m[32m-[0m[32m-[0m[32ms[0m[32mt[0m[32me[0m[32ma[0m[32ml[0m
 pushed via sync-replay → gpu-box
 target session: ses_9c2
 events: 1
 detached here: session ses_7f3 now lives on gpu-box
-
+[2J[3J[H
 [2m──────────────────────────────────────────────────────────────────[0m
 [1m[36m  4 · nas is asleep — the work still moves[0m[0m
 [2m──────────────────────────────────────────────────────────────────[0m
 
-[2m~/code/myapp $[0m [32mre[0m[32mla[0m[32my s[0m[32mend[0m[32m --[0m[32mt[0m[32marg[0m[32met [0m[32mna[0m[32ms -[0m[32m-co[0m[32mnte[0m[32mx[0m[32mt[0m[32m-f[0m[32mile[0m[32m [0m[32mctx[0m[32m.js[0m[32mo[0m[32mn[0m[32m [0m[32m-[0m[32m-b[0m[32mun[0m[32md[0m[32mle-[0m[32mo[0m[32mut[0m[32m [0m[32m~/r[0m[32me[0m[32mla[0m[32my[0m[32m-d[0m[32mem[0m[32mo/h[0m[32ma[0m[32mnd[0m[32mo[0m[32mff.[0m[32mjso[0m[32mn[0m
-target unreachable; bundle written: /tmp/oc-relay-demo/handoff.json
-carry it over, then: relay receive --bundle /tmp/oc-relay-demo/handoff.json --into <repo>
-[2m  sidecar: handoff.bundle (WIP commits inside)[0m
-
-[2m──────────────────────────────────────────────────────────────────[0m
-[1m[36m     …carry it over by any means, then on the nas:[0m[0m
-[2m──────────────────────────────────────────────────────────────────[0m
-
-[2m~/srv/myapp $[0m [32mre[0m[32mla[0m[32my [0m[32mre[0m[32mc[0m[32me[0m[32mive[0m[32m [0m[32m-[0m[32m-bu[0m[32mndl[0m[32me [0m[32mhan[0m[32md[0m[32moff[0m[32m.j[0m[32mso[0m[32mn [0m[32m--[0m[32min[0m[32mt[0m[32mo [0m[32m~/[0m[32mcod[0m[32me/[0m[32mmya[0m[32mpp[0m
-worktree ready: /tmp/oc-relay-demo/receiver/.worktrees/ops-panel
-branch:         opencode/ops-panel
-context:        /tmp/oc-relay-demo/receiver/.worktrees/ops-panel/.relay/handoff.json
-[2m  anchored: 2 items left · "dashboard polish"[0m
-
-[2m──────────────────────────────────────────────────────────────────[0m
-[1m[36m  5 · sensitive work needs a human yes[0m[0m
-[2m──────────────────────────────────────────────────────────────────[0m
-
-[2m~/code/myapp $[0m [32mre[0m[32mla[0m[32my [0m[32mau[0m[32mthz[0m[32m ne[0m[32mw [0m[32m--a[0m[32mcti[0m[32mon[0m[32m de[0m[32mp[0m[32mlo[0m[32my -[0m[32m-[0m[32mla[0m[32mb[0m[32mel [0m[32m'sh[0m[32mip [0m[32mit'[0m[32m [0m[32m--t[0m[32mt[0m[32ml[0m[32m 12[0m[32m0 [0m[32m--h[0m[32mos[0m[32mt [0m[32m127[0m[32m.0[0m[32m.0.[0m[32m1 -[0m[32m-po[0m[32mrt [0m[32m4[0m[32m949[0m[32m9[0m
-request:    2b787be7
-expires:    2026-08-26T17:28:36.230Z
-claim url:  http://127.0.0.1:49499/approve?id=2b787be7&token=Lm2iF2rU52xeLb6h0Sh21YMoTrZ3A0dwlrpt_dRY-pk
-cli:        relay authz approve --id 2b787be7 --token Lm2iF2rU52xeLb6h0Sh21YMoTrZ3A0dwlrpt_dRY-pk
-token (shown once, never stored): Lm2iF2rU52xeLb6h0Sh21YMoTrZ3A0dwlrpt_dRY-pk
-[40;37;1m█████████████████████████████████████████████[0m
-[40;37;1m█████████████████████████████████████████████[0m
-[40;37;1m████ ▄▄▄▄▄ █▀█ █▄ █ ▄▀▀█▄ ▄█▀▄▄▄██ ▄▄▄▄▄ ████[0m
-[40;37;1m████ █   █ █▀▀▀█ █ ▀ ██▄ ▀▄ ▄▄█▄▄█ █   █ ████[0m
-[40;37;1m████ █▄▄▄█ █▀ █▀▀▄ ▄█ ▀█▄▀▀▀ ▄▀  █ █▄▄▄█ ████[0m
-[40;37;1m████▄▄▄▄▄▄▄█▄▀ ▀▄█▄▀ ▀▄█ █▄█▄▀ █ █▄▄▄▄▄▄▄████[0m
-[40;37;1m████  ▄  ▀▄  ▄▀▄▀▀▀ ▄██▄█▄▀▄▄▀▄▀█▄█▄▀▄▀ ▀████[0m
-[40;37;1m████▄▀▄▀█▄▄▀██ █▀ █ ▄██▄▀▄▄▀▀▄▄ ▄ ▀▀ █ █▀████[0m
-[40;37;1m█████ ▀█▄▀▄▀  ▀█▄█▄▀ ▀▄▄█ ▀▄▀▀█▀ ▀ ▄▀▄▄█▄████[0m
-[40;37;1m████▄█▄█▄ ▄▄▀▀▀ ▄███ ▀▀▀█  ▀▀▀ ▄█▀ ▄▀█ █ ████[0m
-[40;37;1m████ ▀  ▀▀▄ ▄▄ ▄▀▀█ ▄█▄▄ ▄▄██▀ ▀   ▀▀▀▄▀▄████[0m
-[40;37;1m████▀ ▀▄▄▀▄▄ ▄██▀ ▄   ▀▄▀  ▀█▀██ █▀▀▀ ▄▄ ████[0m
-[40;37;1m████▄ ▄ ▀█▄ ▄▄▄█▄█▄▀▄▀ █▄▄▄▄ ▀▀▀▀  ██ █ ▄████[0m
-[40;37;1m████ ██ ██▄▀▄ █ ▄█▀ ▀▀▀█▀▄▄ ▀█▀ ▄▄▀██▀▀▄ ████[0m
-[40;37;1m████▀▀█ ██▄ ███▄▀▀▀▀▄██▄█▄▀▄█▀▄▀▄▀   ▄█ ▄████[0m
-[40;37;1m████ █▄▀█▀▄█ ▄▄█▀ ▄▀▀█ ▀█▀▄█▀▀ ▀ ▄▀ ▄▀ ▄ ████[0m
-[40;37;1m████▄█▄▄██▄▄ ▄██▄█▄▀▄▀▀▄▄▄▀▄█▀▄█ ▄▄▄ ▀▄██████[0m
-[40;37;1m████ ▄▄▄▄▄ █▄ ▄ ▄█▀▄▄█▀▄  ▀  ▀▀▄ █▄█ ██▄ ████[0m
-[40;37;1m████ █   █ █  █▄▀▀▀▀ ▀▄▄█  ▄█▀▀█ ▄ ▄▄█▄▄ ████[0m
-[40;37;1m████ █▄▄▄█ █ ▀▄█▀ ▄▀ █▄▄█▀▀ ▀█ ▄▄ ▄▄  ▄█ ████[0m
-[40;37;1m████▄▄▄▄▄▄▄█▄█▄█▄█▄█▄█▄▄▄▄█▄███▄▄█▄▄▄▄▄▄▄████[0m
-[40;37;1m█████████████████████████████████████████████[0m
-[40;37;1m█████████████████████████████████████████████[0m
-
-[2m~/code/myapp $[0m [32mr[0m[32mela[0m[32my[0m[32m se[0m[32mrv[0m[32me-a[0m[32mp[0m[32mpro[0m[32mva[0m[32ml[0m[32ms [0m[32m--[0m[32mpo[0m[32mrt[0m[32m [0m[32m4[0m[32m949[0m[32m9 &[0m[32m  [0m[32m [0m[32m#[0m[32m [0m[32mp[0m[32mh[0m[32mo[0m[32mn[0m[32me [0m[32mta[0m[32mp[0m[32ms[0m[32m t[0m[32mhe [0m[32mc[0m[32mlai[0m[32mm[0m[32m [0m[32mURL[0m[32m…[0m
-  [33mphone →[0m approved ✓
-
-[2m~/code/myapp $[0m [32mre[0m[32ml[0m[32ma[0m[32my [0m[32mau[0m[32mt[0m[32mhz [0m[32mlis[0m[32mt[0m
-2b787be7	approved	deploy (ship it)
-
-[2m──────────────────────────────────────────────────────────────────[0m
-[1m[36m  6 · any machine converges to the declared env[0m[0m
-[2m──────────────────────────────────────────────────────────────────[0m
-
-[2m~/code/myapp $[0m [32mre[0m[32mlay[0m[32m [0m[32md[0m[32moc[0m[32mtor[0m
-manifest: myapp
-  [missing] mcp-server: github
-
-[2m~/code/myapp $[0m [32mrel[0m[32may[0m[32m a[0m[32mppl[0m[32my[0m
-manifest: myapp
-  add: github
-
-[2m~/code/myapp $[0m [32mre[0m[32ml[0m[32may [0m[32md[0m[32mo[0m[32mc[0m[32mtor[0m
-manifest: myapp
-  [ok] mcp-server: github
-
-[2m──────────────────────────────────────────────────────────────────[0m
-[1m  the work follows you.[0m
-[2m  npm install -g oc-relay · https://github.com/PremierStudio/oc-relay[0m
-[2m──────────────────────────────────────────────────────────────────[0m
-
-
-Script done on 2026-08-26 13:26:49-04:00 [COMMAND_EXIT_CODE="0"]
+[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32ms[0m[32me[0m[32mn[0m[32md[0m[32m [0m[32m-[0m[32m-[0m[32mt[0m[32ma[0m[32mr[0m[32mg[0m[32me[0m[32mt[0m[32m [0m[32mn[0m[32ma[0m[32ms[0m[32m [0m[32m-[0m[32m-[0m[32mc[0m[32mo[0m[32mn[0m[32mt[0m[32me[0m[32mx[0m[32mt[0m[32m-[0m[32mf[0m[32mi[0m[32ml[0m[32me[0m[32m [0m[32mc[0m[32mt[0m[32mx[0m[32m.[0m[32mj[0m[32ms[0m[32mo[0m[32mn[0m[32m [0m[32m-[0m[32m-[0m[32mb[0m[32mu[0m[32mn[0m[32md[0m[32ml[0m[32me[0m[32m-[0m[32mo[0m[32mu[0m[32mt[0m[32m [0m[32m~[0m[32m/[0m[32mr[0m[32me[0m[3

@@ -235,59 +235,69 @@ const write = (rgba) =>
   });
 
 async function main() {
-  let lastEmit = -FRAME_MS; // emit a frame at t=0 (opening state)
-  let clock = 0;
-  let offset = 0;
   // xterm parses writes asynchronously — only snapshot after the callback
   const feed = (data) => new Promise((resolve) => term.write(data, resolve));
+
+  // Pass 1 — compress the timeline: any pause longer than MAX_GAP
+  // collapses to MAX_GAP (reading time kept, dead air cut). Arrival
+  // times stay monotonic by construction.
+  const events = [];
+  let clock = 0;
+  let offset = 0;
+  let prevClock = 0;
   for (const { n, t } of timing) {
     clock += t; // timing entries are deltas from the previous write
-    const chunkStart = offset;
+    const from = Math.max(offset, WIN_START);
     offset += n;
-    const from = Math.max(chunkStart, WIN_START);
     const to = Math.min(offset, WIN_END);
-    if (to <= from) continue; // banner bytes: time passes, screen unchanged
-    // hold each pause up to MAX_GAP of identical frames, then jump cut
-    let idle = 0;
-    while (clock - lastEmit >= FRAME_MS && idle < MAX_GAP) {
-      await write(drawFrame());
-      sent++;
-      lastEmit += FRAME_MS;
-      idle += FRAME_MS;
-    }
-    await feed(decode(log.subarray(from, to)));
-    if (clock - lastEmit >= FRAME_MS) {
-      await write(drawFrame());
-      sent++;
-      lastEmit = clock;
-    }
+    if (to <= from) continue; // banner bytes: no screen content
+    const gap = events.length === 0 ? 0 : Math.min(clock - prevClock, MAX_GAP);
+    prevClock = clock;
+    events.push({ t: events.length === 0 ? 0 : events.at(-1).t + gap, bytes: log.subarray(from, to) });
   }
-  await feed(""); // drain any tail parsing before the final snapshot
-  // A recording can end mid-UTF-8 (the PTY truncates where `script`
-  // appends its trailer). Flushing that partial yields exactly one
-  // U+FFFD — drop the tail instead of putting tofu on screen.
-  const tail = decoder.decode();
-  if (tail !== "" && !tail.includes("\uFFFD")) await feed(tail);
+  const total = events.length === 0 ? 0 : events.at(-1).t;
 
-  // glyph sanity: a replacement char on screen means something upstream
-  // re-introduced byte-level decoding. Fail loudly rather than ship tofu.
-  let tofu = 0;
-  for (let row = 0; row < ROWS; row++) {
-    const line = term.buffer.active.getLine(term.buffer.active.baseY + row);
-    if (line === undefined) continue;
-    for (let col = 0; col < COLS; col++) {
-      const ch = line.getCell(col)?.getChars();
-      if (ch === "\uFFFD") tofu++;
+  // Pass 2 — replay on a FIXED 20fps clock: every frame advances the
+  // terminal through everything that arrived by then, then draws.
+  // Frames land evenly no matter how the bytes chunked, so a bar that
+  // arrived as two writes 5ms apart still appears whole, in one frame.
+  const nFrames = Math.ceil((total + HOLD_MS) / FRAME_MS);
+  let next = 0;
+  let finished = false;
+  for (let f = 0; f < nFrames; f++) {
+    const frameT = Math.min(f * FRAME_MS, total);
+    while (next < events.length && events[next].t <= frameT) {
+      await feed(decode(events[next].bytes));
+      next++;
     }
-  }
-  if (tofu > 0) throw new Error(`${tofu} U+FFFD replacement chars on screen — refusing to render tofu`);
+    if (next === events.length && !finished) {
+      finished = true;
+      await feed(""); // drain any tail parsing before hold frames
+      // A recording can end mid-UTF-8 (the PTY truncates where `script`
+      // appends its trailer). Flushing that partial yields exactly one
+      // U+FFFD — drop the tail instead of putting tofu on screen.
+      const tail = decoder.decode();
+      if (tail !== "" && !tail.includes("\uFFFD")) await feed(tail);
 
-  for (let h = 0; h < HOLD_MS; h += FRAME_MS) {
-    await write(drawFrame()); // keep blinking through the end hold
+      // glyph sanity: a replacement char on screen means something
+      // upstream re-introduced byte-level decoding. Fail loudly rather
+      // than ship tofu.
+      let tofu = 0;
+      for (let row = 0; row < ROWS; row++) {
+        const line = term.buffer.active.getLine(term.buffer.active.baseY + row);
+        if (line === undefined) continue;
+        for (let col = 0; col < COLS; col++) {
+          const ch = line.getCell(col)?.getChars();
+          if (ch === "\uFFFD") tofu++;
+        }
+      }
+      if (tofu > 0) throw new Error(`${tofu} U+FFFD replacement chars on screen — refusing to render tofu`);
+    }
+    await write(drawFrame()); // hold frames keep the cursor blinking
     sent++;
   }
   ff.stdin.end();
-  console.log(`replayed ${timing.length} chunks → ${sent} frames @ ${W}x${H} → ${outPath} (0 tofu)`);
+  console.log(`replayed ${events.length} events → ${sent} frames @ ${W}x${H} → ${outPath} (0 tofu, fixed clock)`);
 }
 
 main().catch((e) => {

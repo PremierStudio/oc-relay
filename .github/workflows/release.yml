@@ -10,6 +10,10 @@ permissions:
 
 jobs:
   release:
+    # Publishing is opt-in: set the repo variable RELEASES_ENABLED=true
+    # (and the NPM_TOKEN secret in the `npm` environment) to activate.
+    # secrets/* are not evaluable in job-level if — vars are.
+    if: ${{ vars.RELEASES_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: npm
     steps:
