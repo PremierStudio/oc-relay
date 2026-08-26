@@ -44,16 +44,28 @@ export function fileConfigStore(path: string): ConfigStore {
   };
 }
 
+/**
+ * Map a child_process exec error to a numeric exit code. Success is 0;
+ * a numeric exit code passes through; anything else (signal death,
+ * spawn failure with a string code) normalizes to 1. Extracted so every
+ * arm is unit-testable on platforms whose shell cannot produce it.
+ */
+export function exitCodeOf(error: unknown): number {
+  if (error === null || error === undefined) {
+    return 0;
+  }
+  const raw = (error as { code?: number }).code;
+  return typeof raw === "number" ? raw : 1;
+}
+
 export const execHookRunner = (cwd?: string): HookRunner => ({
   run: async (command: string): Promise<HookResult> => {
     const started = Date.now();
     const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
       (resolve) => {
         exec(command, { cwd }, (error, stdout, stderr) => {
-          // Via the shell, error.code is numeric on exit and absent when signalled.
-          const raw = (error as { code?: number } | undefined)?.code;
           resolve({
-            code: error ? (raw ?? 1) : 0,
+            code: exitCodeOf(error),
             stdout,
             stderr,
           });

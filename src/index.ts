@@ -53,6 +53,7 @@ export {
 // Edge adapters (node built-ins live here)
 export {
   execHookRunner,
+  exitCodeOf,
   fileConfigStore,
   fileManifestSource,
 } from "./provision/node.js";

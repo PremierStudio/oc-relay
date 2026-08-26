@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { execHookRunner, fileConfigStore, fileManifestSource, listDir } from "./node.js";
+import { execHookRunner, exitCodeOf, fileConfigStore, fileManifestSource, listDir } from "./node.js";
 
 let dir: string;
 
@@ -60,6 +60,23 @@ describe("fileConfigStore", () => {
     const bad = join(dir, "corrupt-config.json");
     await writeFile(bad, "{oops", "utf8");
     await expect(fileConfigStore(bad).read()).rejects.toBeInstanceOf(Error);
+  });
+});
+
+describe("exitCodeOf", () => {
+  it("returns 0 for success (null/undefined error)", () => {
+    expect(exitCodeOf(null)).toBe(0);
+    expect(exitCodeOf(undefined)).toBe(0);
+  });
+
+  it("passes numeric exit codes through verbatim", () => {
+    expect(exitCodeOf({ code: 3 })).toBe(3);
+    expect(exitCodeOf({ code: 127 })).toBe(127);
+  });
+
+  it("normalizes signal deaths and string codes to 1", () => {
+    expect(exitCodeOf({ killed: true, signal: "SIGTERM" })).toBe(1);
+    expect(exitCodeOf({ code: "ENOENT" })).toBe(1);
   });
 });
 
