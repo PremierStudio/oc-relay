@@ -166,17 +166,18 @@ Body:
       + release.yml exist; needs the NPM_TOKEN secret if not set)
 - [ ] On a clean machine/vm: `npm install -g oc-relay && relay --help`
       — verify it actually runs (node >= 20)
-- [x] Demo video rendered — `demo/demo.mp4` (37s full tour, typed
-      commands, for X/HN/Reddit) and `demo/hero.mp4` (7s offload loop,
-      ideal timeline autoplay). Both 1872×1226 h264 with terminal window
-      chrome, phone-legible, ~1.7MB. Re-render after any demo change:
-      record with `script -q --log-timing demo/tour.timing -c 'stty
-      cols 100 rows 26; TERM=xterm-256color DEMO_PACE=4 node
-      demo/demo.mjs' demo/tour.typescript`, then `node demo/render-mp4.mjs
-      demo/tour.timing demo/tour.typescript demo/demo.mp4 2400 3200
-      $'\x1b[1m  oc-relay' "zsh — relay tour"`. Commands are typed
-      human-style by default (`DEMO_TYPE=0` to paste); the renderer
-      fails the build if a single tofu glyph reaches the screen
+- [x] Demo video rendered — `demo/demo.mp4` (61s full tour: typed
+      commands, fresh screen per segment, QR lands complete; for
+      HN/Reddit) and `demo/hero.mp4` (13s offload loop, ideal X
+      timeline autoplay). 1872×1226 h264 with terminal window chrome,
+      phone-legible, ~0.55MB. Pipeline: `script --log-timing` records a
+      real PTY (typing is human-paced per keystroke, `DEMO_TYPE=0` to
+      paste), `node demo/render-mp4.mjs <timing> <typescript> <out.mp4>
+      [maxGapMs=1500] [holdMs=3000] [startMarker] [title]` replays it
+      through xterm on a fixed 20fps clock and hard-fails on any tofu
+      glyph. Re-record: `script -q --log-timing demo/tour.timing -c
+      'stty cols 100 rows 26; TERM=xterm-256color DEMO_PACE=2 node
+      demo/demo.mjs' demo/tour.typescript`
 - [ ] Have answers ready for the two guaranteed objections:
       1. "it scans my network?" → strictly opt-in, `--all` only, privacy
          is the default

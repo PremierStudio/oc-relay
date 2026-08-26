@@ -3,6 +3,7 @@ name: release
 on:
   push:
     branches: [main]
+  workflow_dispatch: # re-run after registry-side changes (e.g. trusted-publisher setup)
 
 permissions:
   contents: write
@@ -23,7 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
+          # npm docs: never use package caching in release builds
+          package-manager-cache: false
       - run: npm ci
       - run: npm run build
       - name: Version, changelog, GitHub release
