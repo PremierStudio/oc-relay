@@ -33,8 +33,7 @@
   },
   "files": [
     "dist",
-    "bin",
-    ".opencode/command"
+    "bin"
   ],
   "bin": {
     "relay": "bin/relay.mjs"
@@ -43,6 +42,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/plugin/server.d.ts",
+      "import": "./dist/plugin/server.js"
+    },
+    "./tui": {
+      "types": "./dist/plugin/tui.d.ts",
+      "import": "./dist/plugin/tui.js"
     }
   },
   "scripts": {
@@ -54,7 +61,7 @@
     "demo": "node demo/demo.mjs",
     "demo:record": "node demo/hero-tty.mjs && node demo/render-gif.mjs demo/hero.session.jsonl demo/demo.gif",
     "test:e2e": "npm run build && node --test \"test/e2e/*.test.mjs\"",
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "build": "tsup",
     "mutate": "stryker run"
   },
   "devDependencies": {

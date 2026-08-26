@@ -58,4 +58,25 @@ describe("E2E CLI-02: binary surface contracts", () => {
       t.cleanup();
     }
   });
+
+  it("init writes the OpenCode 2 server plugin, TUI plugin, and /relay command", async () => {
+    const t = sandbox();
+    try {
+      const r = await runRelay(["init"], { env: t.env, cwd: t.repo });
+      assert.equal(r.code, 0, r.stderr);
+      assert.match(r.stdout, /\.opencode\/plugins\/relay\.ts/);
+      assert.match(r.stdout, /\.opencode\/plugins\/tui\/relay\.ts/);
+      assert.match(r.stdout, /Relay: send session/);
+      const { readFile } = await import("node:fs/promises");
+      const plugin = await readFile(join(t.repo, ".opencode/plugins/relay.ts"), "utf8");
+      const tui = await readFile(join(t.repo, ".opencode/plugins/tui/relay.ts"), "utf8");
+      assert.match(plugin, /id: "oc-relay"/);
+      assert.match(plugin, /tool\.transform/);
+      assert.match(tui, /keymap\.layer/);
+      assert.match(tui, /dialog\.select/);
+      assert.match(tui, /Relay: send session/);
+    } finally {
+      t.cleanup();
+    }
+  });
 });

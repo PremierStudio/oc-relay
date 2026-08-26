@@ -30,8 +30,9 @@ first. Record evidence per run; a scenario that cannot be tested is a
 - [ ] `npm pack` → install the tarball into an empty dir; `require`/`import`
       of `oc-relay` resolves and exposes the documented exports.
 - [ ] `.bin/relay` is executable and `relay` with no args prints usage, exit 2.
-- [ ] The packaged files include the `/handoff` command asset
-      (`.opencode/command/handoff.md`).
+- [ ] The tarball exposes `oc-relay/server` and `oc-relay/tui` plugin
+      entrypoints. `relay init` writes `.opencode/plugins/relay.ts`,
+      `.opencode/plugins/tui/relay.ts`, and `.opencode/command/relay.md`.
 
 ## 2. Environment convergence (ENV-01, real secret provider)
 

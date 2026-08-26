@@ -126,7 +126,7 @@ full environment, even with every machine powered off.
 | ✅ 0 | Manifest parser (types → validate → parse) | 100% cov · 100% mut |
 | ✅ 1 | `relay doctor` / `relay apply`: idempotent env convergence (secrets slot + plain impl, MCP drift engine, atomic config writes, hooks) | same gates · e2e smoke ✓ |
 | ✅ 2 | Transport lib: sync-protocol client + export/import fallback + worktree create + **in-band handoff manifest** (`handoff.v1`) | same gates · real-git smoke ✓ |
-| ✅ 3 | `/handoff` command (`.opencode/command/`) + `relay` CLI (`send` / `receive` / `targets` / `doctor`): E2E machine↔machine via bundle or direct push | demo ✓ |
+| ✅ 3 | `/relay` command + TUI palette **Relay: send session** (target picker, steal confirm, toast) + `relay` CLI | demo ✓ |
 | ✅ 4 | Discovery: `relay ping --all` enumerates tailnet peers (Tailscale slot); `relay enroll NAME` builds fleet entries from discovered peers, **opt-in and never auto-probed** | demo ✓ |
 | ✅ 5 | Authorization layer (`src/authz/`): request/approve/consume lifecycle, hashed single-use tokens, claim URLs + QR (qrencode when present), approval HTTP server, `relay authz` CLI + `serve-approvals`, locked/atomic multi-process store | demo ✓ |
 | Gate (all phases) | 100% line/branch/function coverage ✓ · mutation: full-src sweep 100% ✓ · E2E suite (`test/e2e/`) over the real binary: env convergence, offline WIP transfer, sync push, import fallback, discovery, authz lifecycle + concurrency, QR ✓ · manual checklist for real tailnet/phone (human-gated) |

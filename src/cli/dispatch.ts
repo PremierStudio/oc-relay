@@ -71,7 +71,7 @@ export const CLI_USAGE = `usage:
   relay authz list
   relay authz approve --id ID --token TOKEN
   relay serve-approvals [--port N] [--host ADDR]
-  relay init [--force]                # install the OpenCode tools + /relay command
+  relay init [--force]                # install OpenCode GUI: palette picker + /relay
   relay doctor [--repo DIR]
   relay apply [--repo DIR] [--mode additive|manifest-only]
 

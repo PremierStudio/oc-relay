@@ -35,7 +35,7 @@ import {
 } from "../authz/index.js";
 import { claimUrl } from "../authz/claim.js";
 import { buildEnvironmentSnapshot, type SnapshotPorts } from "../envrelay/snapshot.js";
-import { pluginFileContent, commandFileContent } from "../plugin/templates.js";
+import { pluginFileContent, tuiFileContent, commandFileContent } from "../plugin/templates.js";
 
 export const DEFAULT_APPROVALS_PORT = 49400;
 
@@ -371,35 +371,44 @@ export interface InitDeps {
 
 export interface InitReport {
   pluginPath: string;
+  tuiPath: string;
   commandPath: string;
   pluginWritten: boolean;
+  tuiWritten: boolean;
   commandWritten: boolean;
   existing: string[];
 }
 
 /**
- * `relay init` — install the OpenCode UI into a project: an agent-tools
- * plugin (`relay_targets` / `relay_send`) plus the `/relay` slash
- * command. Idempotent unless `force`.
+ * `relay init` — install the OpenCode 2 UI into a project: a server
+ * plugin (`relay_targets` / `relay_send`), a TUI plugin (palette picker),
+ * and the `/relay` slash command. Idempotent unless `force`.
  */
 export async function runInit(
   deps: InitDeps,
   input: { force?: boolean } = {},
 ): Promise<InitReport> {
-  const pluginPath = `${deps.repoDir}/.opencode/plugin/relay.ts`;
+  const pluginPath = `${deps.repoDir}/.opencode/plugins/relay.ts`;
+  const tuiPath = `${deps.repoDir}/.opencode/plugins/tui/relay.ts`;
   const commandPath = `${deps.repoDir}/.opencode/command/relay.md`;
   const existing: string[] = [];
   const pluginWritten = input.force === true || !(await deps.exists(pluginPath));
+  const tuiWritten = input.force === true || !(await deps.exists(tuiPath));
   const commandWritten = input.force === true || !(await deps.exists(commandPath));
   if (!pluginWritten) existing.push(pluginPath);
+  if (!tuiWritten) existing.push(tuiPath);
   if (!commandWritten) existing.push(commandPath);
+  const pkgName = deps.pkgName ?? "oc-relay";
   if (pluginWritten) {
-    await deps.writeFile(pluginPath, pluginFileContent(deps.pkgName ?? "oc-relay"));
+    await deps.writeFile(pluginPath, pluginFileContent(pkgName));
+  }
+  if (tuiWritten) {
+    await deps.writeFile(tuiPath, tuiFileContent(pkgName));
   }
   if (commandWritten) {
     await deps.writeFile(commandPath, commandFileContent());
   }
-  return { pluginPath, commandPath, pluginWritten, commandWritten, existing };
+  return { pluginPath, tuiPath, commandPath, pluginWritten, tuiWritten, commandWritten, existing };
 }
 
 // --- Phase 4: discovery-backed commands ---

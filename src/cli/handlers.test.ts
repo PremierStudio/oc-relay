@@ -838,22 +838,23 @@ describe("runInit (OpenCode UI install)", () => {
     pkgName: "oc-relay",
   });
 
-  it("writes plugin and command when neither exists", async () => {
+  it("writes server plugin, TUI plugin, and command when none exist", async () => {
     const r = await runInit(mk({}), {});
     expect(r.pluginWritten).toBe(true);
+    expect(r.tuiWritten).toBe(true);
     expect(r.commandWritten).toBe(true);
     expect(r.existing).toEqual([]);
-    expect(r.pluginPath).toBe("/proj/.opencode/plugin/relay.ts");
+    expect(r.pluginPath).toBe("/proj/.opencode/plugins/relay.ts");
+    expect(r.tuiPath).toBe("/proj/.opencode/plugins/tui/relay.ts");
     expect(r.commandPath).toBe("/proj/.opencode/command/relay.md");
   });
 
-  it("keeps existing files and lists them without writing", async () => {
+  it("writes only the files that are missing", async () => {
     const written: string[] = [];
     const r = await runInit(
       {
         repoDir: "/proj",
-        exists: async (p) =>
-          p === "/proj/.opencode/plugin/relay.ts" || p === "/proj/.opencode/command/relay.md",
+        exists: async (p) => p === "/proj/.opencode/plugins/relay.ts",
         writeFile: async (p) => {
           written.push(p);
         },
@@ -862,8 +863,35 @@ describe("runInit (OpenCode UI install)", () => {
       {},
     );
     expect(r.pluginWritten).toBe(false);
+    expect(r.tuiWritten).toBe(true);
+    expect(r.commandWritten).toBe(true);
+    expect(r.existing).toEqual(["/proj/.opencode/plugins/relay.ts"]);
+    expect(written).toEqual([
+      "/proj/.opencode/plugins/tui/relay.ts",
+      "/proj/.opencode/command/relay.md",
+    ]);
+  });
+
+  it("keeps existing files and lists them without writing", async () => {
+    const written: string[] = [];
+    const r = await runInit(
+      {
+        repoDir: "/proj",
+        exists: async (p) =>
+          p === "/proj/.opencode/plugins/relay.ts" ||
+          p === "/proj/.opencode/plugins/tui/relay.ts" ||
+          p === "/proj/.opencode/command/relay.md",
+        writeFile: async (p) => {
+          written.push(p);
+        },
+        pkgName: "oc-relay",
+      },
+      {},
+    );
+    expect(r.pluginWritten).toBe(false);
+    expect(r.tuiWritten).toBe(false);
     expect(r.commandWritten).toBe(false);
-    expect(r.existing).toHaveLength(2);
+    expect(r.existing).toHaveLength(3);
     expect(written).toEqual([]);
   });
 
@@ -881,9 +909,11 @@ describe("runInit (OpenCode UI install)", () => {
       { force: true },
     );
     expect(r.pluginWritten).toBe(true);
+    expect(r.tuiWritten).toBe(true);
     expect(r.commandWritten).toBe(true);
     expect(written).toEqual([
-      "/proj/.opencode/plugin/relay.ts",
+      "/proj/.opencode/plugins/relay.ts",
+      "/proj/.opencode/plugins/tui/relay.ts",
       "/proj/.opencode/command/relay.md",
     ]);
   });
@@ -900,10 +930,11 @@ describe("runInit (OpenCode UI install)", () => {
       },
       {},
     );
-    expect(written["/p/.opencode/plugin/relay.ts"]).toContain("pkg: oc-relay");
+    expect(written["/p/.opencode/plugins/relay.ts"]).toContain("pkg: oc-relay");
+    expect(written["/p/.opencode/plugins/tui/relay.ts"]).toContain("pkg: oc-relay");
   });
 
-  it("generated plugin registers both tools and the command drives the CLI", async () => {
+  it("generated server plugin registers tools and the TUI plugin is a picker", async () => {
     const written: Record<string, string> = {};
     await runInit(
       {
@@ -915,10 +946,18 @@ describe("runInit (OpenCode UI install)", () => {
       },
       {},
     );
-    const plugin = written["/p/.opencode/plugin/relay.ts"] ?? "";
+    const plugin = written["/p/.opencode/plugins/relay.ts"] ?? "";
+    expect(plugin).toContain('id: "oc-relay"');
+    expect(plugin).toContain("tool.transform");
     expect(plugin).toContain("relay_targets");
     expect(plugin).toContain("relay_send");
-    expect(plugin).toContain('"relay"');
+    const tui = written["/p/.opencode/plugins/tui/relay.ts"] ?? "";
+    expect(tui).toContain("keymap.layer");
+    expect(tui).toContain("dialog.select");
+    expect(tui).toContain("dialog.confirm");
+    expect(tui).toContain("toast.show");
+    expect(tui).toContain("Relay: send session");
+    expect(tui).toContain('name: "relay"');
     const command = written["/p/.opencode/command/relay.md"] ?? "";
     expect(command).toContain("allowed-tools: Bash(relay:*)");
   });

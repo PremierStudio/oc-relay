@@ -43,7 +43,10 @@ by a human on real hardware — never in CI.
 | AUTHZ-03 | **e2e** | `test/e2e/wip-import-authz.test.mjs` | ten parallel CLI mints all persist through the locked file store |
 | QR-01 | e2e | `test/e2e/wip-import-authz.test.mjs` | qrencode renders claim art; clean degradation without it |
 | OFFLOAD-01 | unit | `src/cli/handlers.test.ts` | `--steal` fires only after a successful push, only when requested; never on the bundle path; degrades honestly when unwired |
-| PKG-01 | e2e | `test/e2e/disc-pkg.test.mjs` | `dist/index.js` exposes every documented runtime export || PKG-02 | e2e | `test/e2e/pkg-install.test.mjs` | `npm pack` → clean consumer install → API import → `.bin/relay` usage exit 2 |
+| PKG-01 | e2e | `test/e2e/disc-pkg.test.mjs` | `dist/index.js` exposes every documented runtime export |
+| PKG-02 | e2e | `test/e2e/pkg-install.test.mjs` | `npm pack` → clean consumer install → API import → `oc-relay/server` + `oc-relay/tui` → `.bin/relay` usage exit 2 |
+| GUI-01 | unit | `src/plugin/*.test.ts` | palette send flow: target parse, picker, steal confirm, toast, TUI keymap, server tools |
+| CLI-03 | e2e | `test/e2e/cli-surface.test.mjs` | `relay init` writes `.opencode/plugins/` server + TUI plugins |
 | PKG-03 | manual | checklist §1 | installed tarball on real hardware (spot-check) |
 | FLEET-01 | unit | `src/cli/config.test.ts` | fleet parsing, env expansion, credential resolution |
 | CLI-01 | unit | `src/cli/dispatch.test.ts` | argv parsing for every verb, exact shapes |

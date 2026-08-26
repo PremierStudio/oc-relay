@@ -33,23 +33,28 @@ yourself: `git clone && npm install && npm run demo` (full tour) or
 ## Use it inside OpenCode (the GUI)
 
 ```sh
-cd your-project && relay init    # writes .opencode/plugin/relay.ts + /relay command
+cd your-project && relay init    # writes .opencode/plugins/ + /relay
 ```
 
-Restart OpenCode, then just tell it what you want:
+Restart OpenCode. In the GUI:
 
-> send this session to gpu-box
+1. Command Palette: **Relay: send session** (or type `/relay`)
+2. Pick a fleet machine
+3. Confirm whether to detach the session here (`--steal`)
+4. A toast reports the target session id, or the bundle path if that machine is offline
 
-The agent calls `relay_targets` to see your fleet, distills the session
-into structured context, and `relay_send` moves it. On the receiving
-machine the worktree, session, and agent environment land together:
-new in the handoff, your **agent environment** travels too — MCP
-servers (secrets redacted to `${VAR}` references with a `requiredEnv`
-list), skills, and rules are snapshotted on send and applied on the
-target through `@itz4blitz/ai-tools` when installed there
-(`.opencode/relay-environment.json` is always written as the
-reviewable source of truth). Hooks are functions, not data — they live
-in committed config and travel with git.
+The agent still has `relay_targets` / `relay_send` if you just say "send this to gpu-box".
+On the receiving machine the worktree, session, and agent environment land together:
+your **agent environment** travels too: MCP servers (secrets redacted to `${VAR}`
+references with a `requiredEnv` list), skills, and rules are snapshotted on send
+and applied on the target through `@itz4blitz/ai-tools` when installed there
+(`.opencode/relay-environment.json` is always written as the reviewable source
+of truth). Hooks are functions, not data: they live in committed config and
+travel with git.
+
+You can also add `"oc-relay"` to `plugins` in `opencode.json` (or
+`~/.config/opencode/opencode.json`) after `npm install oc-relay`. That loads the
+same server + TUI plugin from the package (`oc-relay/server` and `oc-relay/tui`).
 
 ## Three ways people use it
 
@@ -130,14 +135,15 @@ relay receive --bundle relay-bundle-*.json --into ~/code/myapp
 ```
 
 New machine on the tailnet? `relay enroll gpu-box --repo-dir ~/srv/myapp`
-discovers and registers it. Inside OpenCode, the packaged
-`.opencode/command/handoff.md` gives you `/handoff` for the same flow.
+discovers and registers it. Inside OpenCode, `relay init` installs the
+palette command **Relay: send session** (`/relay`) for the same flow.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `relay send [--steal]` | Route work to a machine — direct push, or bundle if unreachable. `--steal` moves the session off this machine after the target takes it |
+| `relay send [--steal]` | Route work to a machine: direct push, or bundle if unreachable. `--steal` moves the session off this machine after the target takes it |
+| `relay init [--force]` | Install the OpenCode GUI: palette picker, `/relay`, and agent tools |
 | `relay receive` | Unpack a carried bundle: worktree, commits, context, session |
 | `relay targets` | List your fleet — the machines work can go to |
 | `relay ping [--all] [--port N]` | Reachability. `--all` adds discovered tailnet peers — **strictly opt-in, never scans unless asked**; `--port` overrides the peer probe port |

@@ -32,9 +32,11 @@ describe("E2E PKG-02: packed tarball installs and runs", () => {
       const pkgJson = JSON.parse(await readFile(join(consumer, "node_modules", "oc-relay", "package.json"), "utf8"));
       assert.ok(pkgJson.bin?.relay, "bin entry missing");
 
-      // The packaged /handoff command asset ships.
+      // Plugin entrypoints ship for OpenCode 2 (`plugins: ["oc-relay"]`).
       const files = pkgJson.files ?? [];
-      assert.ok(files.includes(".opencode/command") || files.includes("dist"), "assets missing");
+      assert.ok(files.includes("dist"), "dist missing from packaged files");
+      assert.ok(pkgJson.exports?.["./server"], "server plugin export missing");
+      assert.ok(pkgJson.exports?.["./tui"], "tui plugin export missing");
 
       // The library API imports from the installed copy.
       const probe = await run(process.execPath, [
@@ -45,6 +47,11 @@ describe("E2E PKG-02: packed tarball installs and runs", () => {
         const need = ["parseCli", "runSend", "runAuthzNew", "startApprovalServer", "commit"];
         const missing = need.filter((k) => !(k in m));
         if (missing.length > 0) throw new Error("missing: " + missing.join(","));
+        const server = await import("oc-relay/server");
+        const tui = await import("oc-relay/tui");
+        if (server.default?.id !== "oc-relay") throw new Error("server plugin id");
+        if (server.default?.tui !== true) throw new Error("server plugin tui flag");
+        if (tui.default?.id !== "oc-relay.tui") throw new Error("tui plugin id");
         console.log("api-ok");
         `,
       ], { cwd: consumer });

@@ -395,11 +395,12 @@ async function main() {
         cmd,
       );
       console.log(`plugin:  ${report.pluginPath}${report.pluginWritten ? "" : " (kept existing)"}`);
+      console.log(`tui:     ${report.tuiPath}${report.tuiWritten ? "" : " (kept existing)"}`);
       console.log(`command: ${report.commandPath}${report.commandWritten ? "" : " (kept existing)"}`);
-      if (report.pluginWritten || report.commandWritten) {
-        console.log("restart OpenCode, then try /relay — or ask the agent to use relay_send");
+      if (report.pluginWritten || report.tuiWritten || report.commandWritten) {
+        console.log("restart OpenCode, then Command Palette: Relay: send session (or /relay)");
       } else {
-        console.log("everything present — use --force to overwrite");
+        console.log("everything present; use --force to overwrite");
       }
       return;
     }

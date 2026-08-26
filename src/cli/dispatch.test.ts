@@ -240,6 +240,11 @@ describe("parseCli", () => {
     });
   });
 
+  it("documents init as the OpenCode GUI install", () => {
+    expect(CLI_USAGE).toContain("relay init [--force]");
+    expect(CLI_USAGE).toContain("palette picker");
+  });
+
   it("parses init with and without --force", () => {
     expect(parseCli(["init"])).toStrictEqual({ ok: true, command: { command: "init" } });
     expect(parseCli(["init", "--force"])).toStrictEqual({
