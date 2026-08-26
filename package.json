@@ -37,7 +37,7 @@
     ".opencode/command"
   ],
   "bin": {
-    "relay": "./bin/relay.mjs"
+    "relay": "bin/relay.mjs"
   },
   "exports": {
     ".": {
