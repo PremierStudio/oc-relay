@@ -1,0 +1,58 @@
+{
+  "name": "oc-relay",
+  "version": "0.0.0-development",
+  "description": "Declarative environments + cross-machine session relay for OpenCode",
+  "type": "module",
+  "license": "MIT",
+  "author": "Justin Scroggins <itz4blitz>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itz4blitz/oc-relay.git"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "relay",
+    "handoff",
+    "worktree",
+    "tailscale",
+    "devcontainer"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "bin",
+    ".opencode/command"
+  ],
+  "bin": {
+    "relay": "./bin/relay.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "check": "npm run typecheck && npm run coverage",
+    "test:e2e": "npm run build && node --test \"test/e2e/*.test.mjs\"",
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "mutate": "stryker run"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@types/node": "^26.3.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "semantic-release": "^25.0.9",
+    "tsup": "^8.5.1",
+    "typescript": "~5.9.0",
+    "vitest": "^4.1.11"
+  }
+}

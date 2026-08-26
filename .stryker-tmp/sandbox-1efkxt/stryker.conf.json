@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/api/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress", "html"],
+  "mutate": ["src/**/*.ts", "!src/**/*.test.ts"],
+  "mutator": {
+    "excludedMutations": ["StringLiteral"]
+  },
+  "thresholds": {
+    "high": 100,
+    "low": 99,
+    "break": 100
+  },
+  "concurrency": 4,
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation.html"
+  }
+}

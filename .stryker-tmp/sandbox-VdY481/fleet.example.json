@@ -1,0 +1,12 @@
+{
+  "$schema": "./fleet.schema.json",
+  "targets": {
+    "example-target": {
+      "baseUrl": "http://machine:49374",
+      "username": "pair-user",
+      "passwordEnv": "MACHINE_RELAY_PASS",
+      "repoDir": "/home/you/Project",
+      "worktreeRoot": "/home/you/Project/.worktrees"
+    }
+  }
+}
