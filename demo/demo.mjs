@@ -171,11 +171,13 @@ const baseEnv = {
 };
 
 // ---------- presentation ----------
-function segment(title) {
+function segment(title, tight = false) {
   // Fresh screen per segment — a tour that scrolls lines off while
   // you read them feels bad on video; each beat gets a clean slate.
+  // `tight` drops the leading blank so oversized output (the QR mint)
+  // lands with its art fully on screen at rest.
   process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
-  console.log("");
+  if (!tight) console.log("");
   console.log(BAR);
   console.log(C.bold(C.cyan(`  ${title}`)));
   console.log(BAR);
@@ -300,7 +302,9 @@ if (existsSync(anchorPath)) {
 await pause(350);
 
 // ── 5. approvals: the phone story ─────────────────────────────
-segment("5 · sensitive work needs a human yes");
+// tight: the QR mint prints 33 rows; without the blank it lands with
+// claim url + token + the complete QR visible at rest (26-row screen)
+segment("5 · sensitive work needs a human yes", true);
 await prompt(repo, "relay authz new --action deploy --label 'ship it' --ttl 120 --host 127.0.0.1 --port 49499");
 const minted = await relay([
   "authz",
@@ -320,6 +324,9 @@ const token = /token \(shown once, never stored\): (\S+)/.exec(minted.out)?.[1] 
 const id = /request:\s+(\S+)/.exec(minted.out)?.[1] ?? "";
 await pause(300);
 
+// QR + claim URL fill a screen on their own — a second screen for the
+// approval side keeps every segment inside 26 rows (no scrolling)
+segment("   …phone taps → approved");
 await prompt(repo, "relay serve-approvals --port 49499 &   # phone taps the claim URL…");
 const approvals = spawn(process.execPath, [RELAY, "serve-approvals", "--port", "49499"], {
   env: { ...baseEnv },

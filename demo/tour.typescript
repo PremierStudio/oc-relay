@@ -1,4 +1,4 @@
-Script started on 2026-08-26 13:36:45-04:00 [COMMAND="stty cols 100 rows 26 2>/dev/null; TERM=xterm-256color DEMO_PACE=2 node demo/demo.mjs" <not executed on terminal>]
+Script started on 2026-08-26 13:43:37-04:00 [COMMAND="stty cols 100 rows 26 2>/dev/null; TERM=xterm-256color DEMO_PACE=2 node demo/demo.mjs" <not executed on terminal>]
 [1;1H[0J
 [1m  oc-relay — the guided tour[0m
 [2m  real binary · synthetic fleet · loopback only[0m
@@ -8,7 +8,7 @@ Script started on 2026-08-26 13:36:45-04:00 [COMMAND="stty cols 100 rows 26 2>/d
 [2m──────────────────────────────────────────────────────────────────[0m
 
 [2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32mt[0m[32ma[0m[32mr[0m[32mg[0m[32me[0m[32mt[0m[32ms[0m
-gpu-box	http://127.0.0.1:41423	~/srv/myapp
+gpu-box	http://127.0.0.1:34491	~/srv/myapp
 nas	http://127.0.0.1:9	~/code/myapp
 [2J[3J[H
 [2m──────────────────────────────────────────────────────────────────[0m
@@ -16,7 +16,7 @@ nas	http://127.0.0.1:9	~/code/myapp
 [2m──────────────────────────────────────────────────────────────────[0m
 
 [2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32mp[0m[32mi[0m[32mn[0m[32mg[0m
-● fleet      gpu-box              http://127.0.0.1:41423 (15ms)
+● fleet      gpu-box              http://127.0.0.1:34491 (16ms)
 ○ fleet      nas                  http://127.0.0.1:9 (0ms)
 [2J[3J[H
 [2m──────────────────────────────────────────────────────────────────[0m
@@ -33,4 +33,32 @@ detached here: session ses_7f3 now lives on gpu-box
 [1m[36m  4 · nas is asleep — the work still moves[0m[0m
 [2m──────────────────────────────────────────────────────────────────[0m
 
-[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32ms[0m[32me[0m[32mn[0m[32md[0m[32m [0m[32m-[0m[32m-[0m[32mt[0m[32ma[0m[32mr[0m[32mg[0m[32me[0m[32mt[0m[32m [0m[32mn[0m[32ma[0m[32ms[0m[32m [0m[32m-[0m[32m-[0m[32mc[0m[32mo[0m[32mn[0m[32mt[0m[32me[0m[32mx[0m[32mt[0m[32m-[0m[32mf[0m[32mi[0m[32ml[0m[32me[0m[32m [0m[32mc[0m[32mt[0m[32mx[0m[32m.[0m[32mj[0m[32ms[0m[32mo[0m[32mn[0m[32m [0m[32m-[0m[32m-[0m[32mb[0m[32mu[0m[32mn[0m[32md[0m[32ml[0m[32me[0m[32m-[0m[32mo[0m[32mu[0m[32mt[0m[32m [0m[32m~[0m[32m/[0m[32mr[0m[32me[0m[3
+[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32ms[0m[32me[0m[32mn[0m[32md[0m[32m [0m[32m-[0m[32m-[0m[32mt[0m[32ma[0m[32mr[0m[32mg[0m[32me[0m[32mt[0m[32m [0m[32mn[0m[32ma[0m[32ms[0m[32m [0m[32m-[0m[32m-[0m[32mc[0m[32mo[0m[32mn[0m[32mt[0m[32me[0m[32mx[0m[32mt[0m[32m-[0m[32mf[0m[32mi[0m[32ml[0m[32me[0m[32m [0m[32mc[0m[32mt[0m[32mx[0m[32m.[0m[32mj[0m[32ms[0m[32mo[0m[32mn[0m[32m [0m[32m-[0m[32m-[0m[32mb[0m[32mu[0m[32mn[0m[32md[0m[32ml[0m[32me[0m[32m-[0m[32mo[0m[32mu[0m[32mt[0m[32m [0m[32m~[0m[32m/[0m[32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m-[0m[32md[0m[32me[0m[32mm[0m[32mo[0m[32m/[0m[32mh[0m[32ma[0m[32mn[0m[32md[0m[32mo[0m[32mf[0m[32mf[0m[32m.[0m[32mj[0m[32ms[0m[32mo[0m[32mn[0m
+target unreachable; bundle written: /tmp/oc-relay-demo/handoff.json
+carry it over, then: relay receive --bundle /tmp/oc-relay-demo/handoff.json --into <repo>
+[2m  sidecar: handoff.bundle (WIP commits inside)[0m
+[2J[3J[H
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m     …carry it over by any means, then on the nas:[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/srv/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32mr[0m[32me[0m[32mc[0m[32me[0m[32mi[0m[32mv[0m[32me[0m[32m [0m[32m-[0m[32m-[0m[32mb[0m[32mu[0m[32mn[0m[32md[0m[32ml[0m[32me[0m[32m [0m[32mh[0m[32ma[0m[32mn[0m[32md[0m[32mo[0m[32mf[0m[32mf[0m[32m.[0m[32mj[0m[32ms[0m[32mo[0m[32mn[0m[32m [0m[32m-[0m[32m-[0m[32mi[0m[32mn[0m[32mt[0m[32mo[0m[32m [0m[32m~[0m[32m/[0m[32mc[0m[32mo[0m[32md[0m[32me[0m[32m/[0m[32mm[0m[32my[0m[32ma[0m[32mp[0m[32mp[0m
+worktree ready: /tmp/oc-relay-demo/receiver/.worktrees/ops-panel
+branch:         opencode/ops-panel
+context:        /tmp/oc-relay-demo/receiver/.worktrees/ops-panel/.relay/handoff.json
+[2m  anchored: 2 items left · "dashboard polish"[0m
+[2J[3J[H[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  5 · sensitive work needs a human yes[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mr[0m[32me[0m[32ml[0m[32ma[0m[32my[0m[32m [0m[32ma[0m[32mu[0m[32mt[0m[32mh[0m[32mz[0m[32m [0m[32mn[0m[32me[0m[32mw[0m[32m [0m[32m-[0m[32m-[0m[32ma[0m[32mc[0m[32mt[0m[32mi[0m[32mo[0m[32mn[0m[32m [0m[32md[0m[32me[0m[32mp[0m[32ml[0m[32mo[0m[32my[0m[32m [0m[32m-[0m[32m-[0m[32ml[0m[32ma[0m[32mb[0m[32me[0m[32ml[0m[32m [0m[32m'[0m[32ms[0m[32mh[0m[32mi[0m[32mp[0m[32m [0m[32mi[0m[32mt[0m[32m'[0m[32m [0m[32m-[0m[32m-[0m[32mt[0m[32mt[0m[32ml[0m[32m [0m[32m1[0m[32m2[0m[32m0[0m[32m [0m[32m-[0m[32m-[0m[32mh[0m[32mo[0m[32ms[0m[32mt[0m[32m [0m[32m1[0m[32m2[0m[32m7[0m[32m.[0m[32m0[0m[32m.[0m[32m0[0m[32m.[0m[32m1[0m[32m [0m[32m-[0m[32m-[0m[32mp[0m[32mo[0m[32mr[0m[32mt[0m[32m [0m[32m4[0m[32m9[0m[32m4[0m[32m9[0m[32m9[0m
+request:    af16c702
+expires:    2026-08-26T17:46:19.095Z
+claim url:  http://127.0.0.1:49499/approve?id=af16c702&token=ZVqFi8lRvbxtyotV-2BEzF9ZdCYbq6XnbuZOMuhE9Lo
+cli:        relay authz approve --id af16c702 --token ZVqFi8lRvbxtyotV-2BEzF9ZdCYbq6XnbuZOMuhE9Lo
+token (shown once, never stored): ZVqFi8lRvbxtyotV-2BEzF9ZdCYbq6XnbuZOMuhE9Lo
+[40;37;1m█████████████████████████████████████████████[0m
+[40;37;1m█████████████████████████████████████████████[0m
+[40;37;1m████ ▄▄▄▄▄ █   █▄█▄█  ▄▄▄ ▄▀▄▀▀█▄█ ▄▄▄▄▄ ████[0m
+[40;37;1m████ █   █ █ ▀▄ ██▀ ▄ ▀█▀ ▄ ▀▄▄▄▄█ █   █ ████[0m
+[40;37;1m████ █▄▄▄█ █▀██�
