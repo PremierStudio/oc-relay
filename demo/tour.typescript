@@ -1,0 +1,113 @@
+Script started on 2026-08-26 13:17:52-04:00 [COMMAND="stty cols 100 rows 26 2>/dev/null; TERM=xterm-256color DEMO_PACE=14 node demo/demo.mjs" <not executed on terminal>]
+[1;1H[0J
+[1m  oc-relay — the guided tour[0m
+[2m  real binary · synthetic fleet · loopback only[0m
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  1 · your fleet — every machine work can go to[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mrelay targets[0m
+gpu-box	http://127.0.0.1:33521	~/srv/myapp
+nas	http://127.0.0.1:9	~/code/myapp
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  2 · who's alive right now[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mrelay ping[0m
+● fleet      gpu-box              http://127.0.0.1:33521 (14ms)
+○ fleet      nas                  http://127.0.0.1:9 (0ms)
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  3 · offload — send it away AND let go here[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mrelay send --target gpu-box --session ses_7f3 --steal[0m
+pushed via sync-replay → gpu-box
+target session: ses_9c2
+events: 1
+detached here: session ses_7f3 now lives on gpu-box
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  4 · nas is asleep — the work still moves[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mrelay send --target nas --context-file ctx.json --bundle-out ~/relay-demo/handoff.json[0m
+target unreachable; bundle written: /tmp/oc-relay-demo/handoff.json
+carry it over, then: relay receive --bundle /tmp/oc-relay-demo/handoff.json --into <repo>
+[2m  sidecar: handoff.bundle (WIP commits inside)[0m
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m     …carry it over by any means, then on the nas:[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/srv/myapp $[0m [32mrelay receive --bundle handoff.json --into ~/code/myapp[0m
+worktree ready: /tmp/oc-relay-demo/receiver/.worktrees/ops-panel
+branch:         opencode/ops-panel
+context:        /tmp/oc-relay-demo/receiver/.worktrees/ops-panel/.relay/handoff.json
+[2m  anchored: 2 items left · "dashboard polish"[0m
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  5 · sensitive work needs a human yes[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mrelay authz new --action deploy --label 'ship it' --ttl 120 --host 127.0.0.1 --port 49499[0m
+request:    ba0efaa0
+expires:    2026-08-26T17:20:18.750Z
+claim url:  http://127.0.0.1:49499/approve?id=ba0efaa0&token=Mdjg9VlyFQfUZZiOWi2OJxkwFP3gDUkRZCK88WO9B_8
+cli:        relay authz approve --id ba0efaa0 --token Mdjg9VlyFQfUZZiOWi2OJxkwFP3gDUkRZCK88WO9B_8
+token (shown once, never stored): Mdjg9VlyFQfUZZiOWi2OJxkwFP3gDUkRZCK88WO9B_8
+[40;37;1m█████████████████████████████████████████████[0m
+[40;37;1m█████████████████████████████████████████████[0m
+[40;37;1m████ ▄▄▄▄▄ █▀▄█▀ ██▀▀▄██▄▄▄█▀▄██ █ ▄▄▄▄▄ ████[0m
+[40;37;1m████ █   █ █▄   ▄ █▄█▀ ▄ ▀ ▄ ▀▀█ █ █   █ ████[0m
+[40;37;1m████ █▄▄▄█ █ ▀█▀█▄██ ▄▀▄ ▀ ▀▄▀▄▀ █ █▄▄▄█ ████[0m
+[40;37;1m████▄▄▄▄▄▄▄█ ▀▄█ ▀ █ █ ▀▄█▄█▄█▄█▄█▄▄▄▄▄▄▄████[0m
+[40;37;1m████▄▄▀ █▀▄ █▀ ▀██▄▀▀ ▀▀ █ ▀██▀ ▄▀   █ ▄█████[0m
+[40;37;1m████▀ █▄██▄▄█▄▀██▀▀  ▀ █▀ ▀██ ▄▀▄ █▄█▄ ██████[0m
+[40;37;1m██████▀▀█▄▄█ ▀█▀ █▄▀▀▀ ███▄ ▀▀▀ ██▄▄ █▀▀ ████[0m
+[40;37;1m████▀▄██▀ ▄███ █ ▀██  █ ▀ █▄██▀█▄▄▄ ▀▄▀ ▄████[0m
+[40;37;1m████▄█ ██ ▄▀▄▀▀▄█▄  █▀▄▀▄▀ █▀▄▄   ▄▄▄ ▄▀ ████[0m
+[40;37;1m████▀▄▄ █▄▄▄ ▄▀▀█ ██▄██▀▄█▄█▀█▄▄█▀█▀ ▀▀ ▄████[0m
+[40;37;1m█████▀ █ ▄▄  █▄  ▀▄  ▄▀  ▀ ▀▄█   █▄▀█▀▄█ ████[0m
+[40;37;1m█████▀▄▀▄ ▄██ ▀   ▄▄█▀ ▀█▀▄ █  ▀▄▄█   ▀▄▄████[0m
+[40;37;1m████▄  █ ▄▄ █▀▄ █▀ ▀█▀▀█▀██ ▀▀█ ▀█▄ ▀█ ▄ ████[0m
+[40;37;1m████▄▀▄▀▀▄▄▄ █▀ █▄▄ ▄  ▄▄█  █▀▄ ▀▀█▄▄ ▀▀▄████[0m
+[40;37;1m████▄▄██▄▄▄▄▀▄ █  ▀▀▄█  █▀▀▄▀▄ ▄ ▄▄▄  ▄█▀████[0m
+[40;37;1m████ ▄▄▄▄▄ █▄  ▄ █ ▄▄▀▀▀▄▀█▄▄▀ █ █▄█ ▄  ▄████[0m
+[40;37;1m████ █   █ █▀██▀██▀▀█▄▀ ▄▀▀▀▀█▀▄  ▄ ▄▄█▀▄████[0m
+[40;37;1m████ █▄▄▄█ █▀▄▀███▀ ▀ ▄█▄▄▄ █ ██▄  ▀█▀▄█▄████[0m
+[40;37;1m████▄▄▄▄▄▄▄█▄███▄█████████▄▄██▄███▄▄███▄▄████[0m
+[40;37;1m█████████████████████████████████████████████[0m
+[40;37;1m█████████████████████████████████████████████[0m
+
+[2m~/code/myapp $[0m [32mrelay serve-approvals --port 49499 &   # phone taps the claim URL…[0m
+  [33mphone →[0m approved ✓
+
+[2m~/code/myapp $[0m [32mrelay authz list[0m
+ba0efaa0	approved	deploy (ship it)
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m[36m  6 · any machine converges to the declared env[0m[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+[2m~/code/myapp $[0m [32mrelay doctor[0m
+manifest: myapp
+  [missing] mcp-server: github
+
+[2m~/code/myapp $[0m [32mrelay apply[0m
+manifest: myapp
+  add: github
+
+[2m~/code/myapp $[0m [32mrelay doctor[0m
+manifest: myapp
+  [ok] mcp-server: github
+
+[2m──────────────────────────────────────────────────────────────────[0m
+[1m  the work follows you.[0m
+[2m  npm install -g oc-relay · https://github.com/PremierStudio/oc-relay[0m
+[2m──────────────────────────────────────────────────────────────────[0m
+
+
+Script done on 2026-08-26 13:18:39-04:00 [COMMAND_EXIT_CODE="0"]

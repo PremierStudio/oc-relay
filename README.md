@@ -22,12 +22,13 @@ offline right now.
 ---
 
 <p align="center">
-  <a href="assets/demo.svg" target="_blank"><img src="assets/demo.svg" width="720" alt="oc-relay guided tour: fleet listing, ping, offloading a session with --steal, offline bundle transfer, phone approval with QR, environment convergence"></a>
+  <img src="demo/demo.gif" width="720" alt="oc-relay hero: listing the fleet, pinging targets, offloading a session to gpu-box with --steal (real recording of the real binary on a loopback fleet)">
 </p>
 
-**The full tour in one command** — real binary, synthetic fleet, loopback
-only: `git clone && npm install && npm run demo`. Every line above is
-live output from the actual tool.
+*A real recording of the real binary* — typed commands, genuine output
+timing, loopback stand-ins for the sync endpoints only. Replay it
+yourself: `git clone && npm install && npm run demo` (full tour) or
+`npm run demo:record` (re-records and re-renders this GIF).
 
 ## Three ways people use it
 

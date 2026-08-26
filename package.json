@@ -48,6 +48,7 @@
     "coverage": "vitest run --coverage",
     "check": "npm run typecheck && npm run coverage",
     "demo": "node demo/demo.mjs",
+    "demo:record": "node demo/hero-tty.mjs && node demo/render-gif.mjs demo/hero.session.jsonl demo/demo.gif",
     "test:e2e": "npm run build && node --test \"test/e2e/*.test.mjs\"",
     "build": "tsup src/index.ts --format esm --dts --clean",
     "mutate": "stryker run"
@@ -57,9 +58,14 @@
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.3.0",
     "@vitest/coverage-v8": "^4.1.11",
+    "@xterm/headless": "^6.1.0-beta.302",
+    "canvas": "^3.2.3",
     "semantic-release": "^25.0.9",
     "tsup": "^8.5.1",
     "typescript": "~5.9.0",
     "vitest": "^4.1.11"
+  },
+  "allowScripts": {
+    "canvas@3.2.3": true
   }
 }
